@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام فندق أبيلا</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #37474f;
+            --text-sec: #78909c;
+            --border-color: #cfd8dc;
+            --primary: #0097a7;       /* Teal Primary (Reverted) */
+            --primary-light: #e0f7fa; /* Lighter Teal */
+            --success: #00b894;
+            --danger: #d63031;
+            --warning: #f1c40f;
+            --upgrade: #7e57c2;
+            --gold-btn: #FFD700;     /* New Gold Button Color */
+            --shadow: 0 4px 20px rgba(0, 151, 167, 0.08);
+        }
+
+        body.dark-mode {
+            --bg-body: #1e1e1e;
+            --bg-card: #2d2d2d;
+            --text-main: #dfe6e9;
+            --text-sec: #b2bec3;
+            --border-color: #444;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--bg-body);
+            background-image: radial-gradient(#b0bec5 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px 15px 130px 15px; /* Adjusted padding for fixed footer */
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        body.dark-mode { background-image: none; }
+
+        .container { max-width: 500px; margin: 0 auto; }
+
+        /* --- Header --- */
+        .header-glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid #fff;
+            border-radius: 20px; padding: 15px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: var(--shadow);
+        }
+        body.dark-mode .header-glass { background: rgba(45,45,45,0.7); border-color:rgba(255,255,255,0.1); }
+        
+        .header-title { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .header-title h1 { font-size: 1rem; margin: 0; color: var(--primary); font-weight: 800; line-height: 1.2; }
+        
+        /* Toggle Button */
+        #mode-toggle-btn {
+            border: none; padding: 6px 15px; border-radius: 20px;
+            font-weight: 800; font-size: 0.9rem; cursor: pointer; color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: 0.3s; min-width: 80px;
+        }
+        #mode-toggle-btn.btn-staff { background: var(--danger); }
+        #mode-toggle-btn.btn-worker { background: var(--success); }
+
+        .tools-area { display: flex; gap: 8px; }
+        .tools-btn { background: var(--bg-body); border: 1px solid var(--border-color); padding: 8px; border-radius: 10px; cursor: pointer; }
+
+        /* --- VIEW CONTROLLERS --- */
+        .staff-view, .worker-view { display: none; width: 100%; }
+        body.staff-mode .staff-view { display: block; animation: fadeIn 0.3s; }
+        body.worker-mode .worker-view { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- UI Elements --- */
+        .card, .section { background: var(--bg-card); border-radius: 18px; padding: 15px; box-shadow: var(--shadow); border: 1px solid var(--border-color); margin-bottom: 15px; }
+        .sec-title { font-weight: 700; color: var(--primary); margin-bottom: 15px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
+        
+        /* Log Title (clickable) */
+        .log-title-clickable { cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+
+        /* --- Worker UI Specifics --- */
+        .room-row {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+            padding: 10px; margin-bottom: 10px; 
+            /* Grid: Timer | Room# | Type | Button */
+            display: grid; grid-template-columns: 50px 0.8fr 1fr auto; gap: 8px;
+            align-items: center; border-right: 4px solid transparent; transition: 0.3s;
+        }
+        .room-row.status-cleaning { border-right-color: var(--primary); background: #f0fbfc; }
+        .room-row.status-checking_live { border-right-color: var(--warning); background: #fffde7; }
+        .room-row.status-checking { border-right-color: var(--success); background: #f0fbfc; }
+        .room-row.status-over { border-right-color: var(--danger); background: #ffebee; animation: pulseRed 2s infinite; }
+        .room-row.status-acknowledging { border-right-color: var(--upgrade); background: #f3e5f5; } 
+        
+        @keyframes pulseRed { 0% {box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.4);} 70% {box-shadow: 0 0 0 10px rgba(214, 48, 49, 0);} 100% {box-shadow: 0 0 0 0 rgba(214, 48, 49, 0);} }
+
+        .timer-display { font-weight: 800; font-size: 1rem; text-align: center; color: var(--text-sec); }
+        .timer-active { color: var(--primary); }
+        .timer-danger { color: var(--danger); }
+        
+        .room-input { 
+            width: 100%; border: none; background: transparent; font-size: 1.1rem; font-weight: 800; 
+            text-align: center; color: var(--text-main); border-bottom: 2px dashed #ddd; 
+        }
+        
+        .type-select {
+            width: 100%; padding: 5px; border-radius: 8px; border: 1px solid var(--border-color);
+            background: var(--bg-body); font-size: 0.75rem; font-weight: bold; color: var(--text-main);
+            margin-bottom: 4px; /* Space before sub-select */
+        }
+        .sub-select-container { 
+             display: flex; flex-direction: column; 
+             gap: 4px;
+             padding-top: 4px;
+        }
+
+        .btn-action { padding: 8px 10px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: #fff; font-size: 0.8rem; }
+        .btn-start { background: var(--primary); }
+        .btn-check { background: var(--warning); color: #333; font-size: 0.7rem; }
+        .btn-finish { background: var(--success); }
+        .btn-undo { background: #fab1a0; color: var(--danger); margin-top: 5px; font-size: 0.6rem; width: 100%; }
+
+        .badge { font-size: 0.6rem; padding: 2px 4px; border-radius: 4px; background: #eee; color: #666; display: block; margin-top: 2px; }
+
+        /* Indicators */
+        .quiet-notif { background: var(--warning); color: #333; padding: 8px; text-align: center; border-radius: 8px; font-size: 0.8rem; font-weight: bold; margin-bottom: 10px; display: none; }
+        
+        /* Stats Grid */
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr 1fr; 
+            gap: 10px 5px; 
+            text-align: center; 
+            margin-bottom: 15px; 
+        }
+        .stat-box h4 { margin: 0; font-size: 1.2rem; color: var(--upgrade); }
+        .stat-box span { font-size: 0.7rem; color: var(--text-sec); }
+        
+        /* New Stat Boxes for Clean Look */
+        .stat-box-item {
+            padding: 6px 4px; 
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            background: var(--bg-body);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .stat-box-item h4 {
+            font-size: 1.0rem; 
+        }
+        .stat-box-item span {
+            font-size: 0.55rem; 
+        }
+
+        /* Stats Circular Visualization */
+        .stat-circle-box {
+            text-align: center;
+        }
+        .circle-viz {
+            width: 70px; 
+            height: 70px; 
+            border-radius: 50%;
+            margin: 0 auto 5px auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-body);
+            /* Soft 3D Shadow Effect */
+            box-shadow: 4px 4px 8px rgba(0,0,0,0.1), -4px -4px 8px rgba(255,255,255,0.8); 
+            border: 5px solid var(--bg-body); 
+            transition: 0.3s;
+        }
+        .circle-viz h3 {
+            margin: 0;
+            font-size: 1.4rem; 
+            color: var(--text-main);
+        }
+        .circle-viz span {
+            font-size: 0.6rem; 
+            color: var(--text-sec);
+        }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal-content { background: var(--bg-card); padding: 20px; border-radius: 20px; width: 90%; max-width: 350px; }
+        .modal-content select, .modal-content input, .modal-content textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; }
+        .modal-label { font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; display: block; color: var(--text-main); }
+        .required-field { border: 2px solid var(--danger) !important; }
+
+        /* Footer */
+        .sticky-footer {
+            position: fixed; bottom: 35px; /* Lift above the dev footer */
+            left: 0; width: 100%;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-color); padding: 15px; box-sizing: border-box;
+            border-radius: 20px 20px 0 0; z-index: 999;
+        }
+        body.dark-mode .sticky-footer { background: rgba(30,30,30,0.95); }
+        .full-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1rem; color: white; }
+        
+        /* Confirmation Toast Style */
+        .worker-toast {
+            position: fixed; 
+            top: 65px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: var(--upgrade); 
+            color: white; 
+            padding: 8px 15px; 
+            border-radius: 20px;
+            font-size: 0.9rem; 
+            font-weight: 700; 
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s; 
+            z-index: 1500;
+        }
+        .worker-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* Camera Input Styling */
+        #camera-label {
+            display: block;
+            background: var(--primary);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #camera-label:active { background: #007983; }
+        #file-label {
+            display: block;
+            background: var(--text-sec);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #file-label:active { background: #5a6d75; }
+        #modal-img-camera-input, #modal-img-pdf-input {
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            position: absolute;
+            z-index: -1;
+        }
+        
+        /* Fixed Developer Footer */
+        #dev-footer-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #90a4ae; 
+            background: var(--bg-card); 
+            padding: 5px 0;
+            border-top: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+        
+        /* New: Consolidated Action Row */
+        .worker-action-row {
+            display: flex; 
+            gap: 10px; 
+            width: 100%; 
+            margin-bottom: 10px; 
+            flex-wrap: wrap; 
+        }
+        .worker-action-row .full-btn {
+            flex: 1 1 48%; 
+        }
+    </style>
+</head>
+<body class="staff-mode"> <div class="container">
+        <div class="header-glass">
+            <div class="header-title">
+                <button id="mode-toggle-btn" class="btn-staff" onclick="toggleAppMode()">العمال</button>
+                <h1 id="header-text">واجهة الموظفين<br><span style="font-size:0.7rem; opacity:0.7;">فندق أبيلا</span></h1>
+            </div>
+            <div class="tools-area">
+                <button class="tools-btn" onclick="document.body.classList.toggle('dark-mode')">🌙</button>
+            </div>
+        </div>
+
+        <div class="worker-view">
+            <div id="worker-toast" class="worker-toast"></div>
+            
+            <div id="offline-indicator" class="quiet-notif" style="background:var(--danger); color:white;">⚠️ وضع عدم الاتصال: يتم حفظ البيانات محلياً</div>
+            <div id="rain-mode-indicator" class="quiet-notif" style="background:var(--upgrade); color:white;">⚡ الوضع التيربو مفعّل</div>
+            <div id="timer-alert-bar" class="quiet-notif">⚠️ انتبه: يوجد غرف تجاوزت الوقت المحدد!</div>
+
+            <div class="section" style="margin-bottom:15px;">
+                <div class="worker-action-row" style="margin-bottom: 0;">
+                    <button id="turbo-mode-btn" class="full-btn" style="background:var(--success); font-size:0.9rem; flex: 1;" onclick="toggleTurboMode()">
+                        تفعيل الوضع التيربو لكل الغرف - المواسم أو الطوارئ
+                    </button>
+                    <button id="report-btn-action" class="full-btn" style="background:var(--gold-btn); color: var(--text-main); font-size:0.9rem; flex: 1;" onclick="generateDailyReport()">
+                        اغلاق اليوم إرسال تقرير النظافة اليومي للاداره
+                    </button>
+                </div>
+            </div>
+
+
+            <div class="section" style="padding:15px;">
+                <div class="sec-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>📈 إحصائيات الأداء الحالية</span>
+                    <button class="tools-btn" style="padding: 5px 8px;" onclick="showResetModal()">🗑️</button>
+                </div>
+                
+                <div class="stats-grid" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                    
+                    <div class="stat-circle-box">
+                        <div class="circle-viz" style="border: 5px solid var(--danger);">
+                            <h3 id="fastest-out-num">--</h3>
+                            <span id="fastest-out-time">أسرع خروج</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-circle-box">
+                        <div class="circle-viz" style="border: 5px solid var(--primary);">
+                            <h3 id="fastest-stay-num">--</h3>
+                            <span id="fastest-stay-time">أسرع ساكن</span>
+                        </div>
+                    </div>
+                    
+                </div>
+                
+                <div style="border-top: 1px dashed var(--border-color); margin-top: 0; padding-top: 15px;">
+                    <div class="stats-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 10px 5px;">
+                        
+                        <div class="stat-box-item"><h4 id="stat-completed">0</h4><span style="color:var(--upgrade)">تم الإنجاز</span></div>
+                        <div class="stat-box-item"><h4 id="stat-avg">0د</h4><span style="color:var(--text-sec)">متوسط الزمن</span></div>
+                        <div class="stat-box-item"><h4 id="stat-over">0</h4><span style="color:var(--danger)">تأخير</span></div>
+                        
+                        <div class="stat-box-item"><h4 id="stat-out-count">0</h4><span style="color:var(--danger)">غرف خروج</span></div>
+                        <div class="stat-box-item"><h4 id="stat-stay-count">0</h4><span style="color:var(--primary)">غرف ساكن</span></div>
+                        <div class="stat-box-item"><h4 id="stat-max-time">--</h4><span style="color:var(--warning)">أقصى وقت تنظيف</span></div>
+                        
+                        <div class="stat-box-item"><h4 id="stat-min-time">--</h4><span style="color:var(--success)">أدنى وقت تنظيف</span></div>
+                        <div class="stat-box-item" style="background:#f4f6f8; box-shadow:none;"></div> <div class="stat-box-item" style="background:#f4f6f8; box-shadow:none;"></div> </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="sec-title">🚪 تتبع الغرف (جدول ذكي)</div>
+                <div id="rooms-container">
+                    </div>
+            </div>
+
+            <div class="section">
+                <div class="sec-title" style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>📋 آخر العمليات المنجزة</span>
+                    <button class="tools-btn" style="padding: 5px 8px; font-size: 1.1rem;" onclick="showLogClearModal()">🗑️</button>
+                </div>
+                <div id="worker-log-list" style="font-size:0.8rem; max-height:200px; overflow-y:auto;">
+                    <p style="text-align:center; color:#999;">لا توجد عمليات بعد</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="staff-view">
+             <div class="card" style="text-align:center;">
+                 <h3>مرحباً موظف الاستقبال 👋</h3>
+                 <p style="color:var(--text-sec);">هذه واجهة الموظفين (الافتراضية).</p>
+                 <div style="padding:20px; background:#e0f7fa; border-radius:10px; margin-top:10px;">
+                     <h1>نظام الإشغال</h1>
+                     <p>تم فصل الواجهات بنجاح.</p>
+                 </div>
+             </div>
+        </div>
+
+    </div>
+
+    <div class="sticky-footer">
+        <div class="worker-view">
+            </div>
+        <div class="staff-view">
+            <button class="full-btn" style="background:var(--primary);" onclick="alert('خيارات الموظفين')">خيارات الموظفين ⚙️</button>
+        </div>
+        
+    </div>
+
+    <div id="dev-footer-fixed">
+        تطوير .. ايمن ابو ورده 77aayy@gmail.com
+    </div>
+
+    <div id="rain-prompt-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align:center;">
+            <h3 style="color:var(--primary); margin-top:0;">اختر وضع البدء</h3>
+            <p>ما هو وضع الضغط لهذه الغرفة؟</p>
+            <button class="full-btn" style="background:var(--danger); margin-bottom:10px;" onclick="commitStartRoom(window.tempRoomId, true)">⚡ ضغط عالي (Rain Mode)</button>
+            <button class="full-btn" style="background:var(--success);" onclick="commitStartRoom(window.tempRoomId, false)">وضع عادي (Normal)</button>
+        </div>
+    </div>
+
+    <div id="final-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 style="margin-top:0; color:var(--primary);" id="modal-title-text">📝 تقرير فحص الغرفة</h3>
+            
+            <div id="delay-reason-section"> 
+                <label class="modal-label" id="delay-reason-label">سبب التأخير (إن وجد):</label>
+                <select id="modal-delay" onchange="updateImageRequirementUI()">
+                    <option value="لا يوجد تأخير">لا يوجد تأخير</option>
+                    <option value="الانشغال بالاستقبال">الانشغال بالاستقبال</option>
+                    <option value="الغرفة بها ملاحظات كثيرة">الغرفة بها ملاحظات كثيرة</option>
+                    <option value="سبب آخر">سبب آخر</option>
+                </select>
+            </div>
+
+
+            <label class="modal-label">ملاحظات الفحص:</label>
+            <select id="modal-notes" onchange="updateMaintenanceUI()">
+                <option value="لا يوجد ملاحظات">لا يوجد ملاحظات</option>
+                <option value="تحتاج صيانة">تحتاج صيانة</option>
+                <option value="نقص مفارش">نقص مفارش</option>
+                <option value="Deep Clean Needed">تحتاج نظافة عميقة</option>
+            </select>
+            
+            <div id="maintenance-fields" style="border: 1px dashed var(--warning); padding: 10px; border-radius: 8px; margin-bottom: 10px; display: none;">
+                <label class="modal-label" style="color:var(--danger);">تفاصيل الصيانة (إجباري):</label>
+                <textarea id="repair-details-input" placeholder="ما هي الأغراض التي تحتاج صيانة؟"></textarea>
+                
+                <label class="modal-label">حالة الصيانة:</label>
+                <select id="repair-status-select" onchange="updateMaintenanceImageStatus()">
+                    <option value="Ongoing">جارية</option>
+                    <option value="Completed">تمت أعمال الصيانة (تغيير الصورة)</option>
+                </select>
+            </div>
+
+            <label class="modal-label" id="image-label">إثبات الحالة:</label>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <label id="camera-label" for="modal-img-camera-input">
+                    📸 افتح الكاميرا
+                </label>
+                <input type="file" accept="image/*" capture="environment" id="modal-img-camera-input">
+                
+                <label id="file-label" for="modal-img-pdf-input">
+                     📄 رفع ملف من الاستديو (صورة/PDF)
+                </label>
+                <input type="file" accept="image/*, application/pdf" multiple id="modal-img-pdf-input">
+            </div>
+            <div style="font-size:0.7rem; color:#999; margin-top:5px; margin-bottom:10px;">(يجب اختيار ملف واحد فقط)</div>
+
+            <button class="full-btn" style="background:var(--success); margin-top:10px;" onclick="confirmFinishRoom()">تأكيد وإرسال 🚀</button>
+            <button class="full-btn" style="background:#ddd; color:#333;" onclick="closeModal()">إلغاء</button>
+        </div>
+    </div>
+    
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align:center;">
+            <h3 style="color:var(--danger); margin-top:0;" id="password-modal-title">تصفية شاملة للبيانات</h3>
+            <p id="reset-status-msg" style="font-size:0.9rem;">أدخل كلمة مرور المسؤول للمتابعة.</p>
+            
+            <input type="password" id="admin-password" placeholder="كلمة المرور" style="width:100%; margin-bottom:15px;" />
+
+            <button id="confirm-reset-btn" class="full-btn" style="background:var(--success); margin-bottom:10px;" onclick="checkPasswordAndReset('full_reset')">تأكيد التصفية</button>
+            <button class="full-btn" style="background:#ddd; color:#333;" onclick="document.getElementById('password-modal').style.display='none'">إلغاء</button>
+        </div>
+    </div>
+    
+    <div id="action-confirm-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align:center;">
+            <h3 id="confirm-title" style="color:var(--danger); margin-top:0;">تأكيد الإجراء</h3>
+            <p id="confirm-message" style="font-size:0.9rem;">هل أنت متأكد من المتابعة؟</p>
+            
+            <button id="confirm-yes-btn" class="full-btn" style="background:var(--success); margin-bottom:10px;">نعم، أؤكد</button>
+            <button class="full-btn" style="background:#ddd; color:#333;" onclick="document.getElementById('action-confirm-modal').style.display='none'">إلغاء</button>
+        </div>
+    </div>
+
+
+    <script>
+        // --- CONFIG & STATE ---
+        const ADMIN_PASSWORD = "fahd5"; // Admin password for reset
+        const TRAVEL_TIME_MS = 15 * 60 * 1000; // 15 minutes travel time
+        let isWorkerMode = false;
+        let isTurboMode = false; // NEW: Global Turbo Mode
+        let workerState = { rooms: [], log: [] };
+        let buffer = [];
+
+        // --- INIT ---
+        window.onload = () => {
+            loadState();
+            renderRooms();
+            updateStats();
+            setInterval(tick, 1000); 
+            checkConn();
+            window.addEventListener('online', checkConn);
+            window.addEventListener('offline', checkConn);
+        };
+
+        // --- HAPTIC & CONFIRMATION ---
+        function vibrate(ms) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
+
+        function showConfirmation(msg) {
+            const toast = document.getElementById('worker-toast');
+            if (!toast) return;
+            toast.innerText = msg;
+            toast.classList.add('show');
+            vibrate(20); 
+            setTimeout(() => toast.classList.remove('show'), 1500);
+        }
+        
+        // NEW: Audible alert generator
+        function playAlertSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); 
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1); 
+            } catch (e) {
+                console.warn("Audio Context not supported or failed to start.");
+            }
+        }
+        
+        // NEW: Shared Confirmation Logic
+        function showActionConfirm(title, callback) {
+            const modal = document.getElementById('action-confirm-modal');
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-yes-btn').onclick = function() {
+                modal.style.display = 'none';
+                callback();
+            };
+            modal.style.display = 'flex';
+        }
+
+
+        // --- TOGGLE MODES ---
+        function toggleAppMode() {
+            isWorkerMode = !isWorkerMode;
+            const body = document.body;
+            const btn = document.getElementById('mode-toggle-btn');
+            const headerTxt = document.getElementById('header-text');
+
+            if (isWorkerMode) {
+                body.classList.remove('staff-mode'); body.classList.add('worker-mode');
+                btn.innerText = "الموظفين"; btn.className = "btn-worker";
+                headerTxt.innerHTML = 'واجهة العمال<br><span style="font-size:0.7rem; opacity:0.7;">تتبع الغرف</span>';
+            } else {
+                body.classList.remove('worker-mode'); body.classList.add('staff-mode');
+                btn.innerText = "العمال"; btn.className = "btn-staff";
+                headerTxt.innerHTML = 'واجهة الموظفين<br><span style="font-size:0.7rem; opacity:0.7;">فندق أبيلا</span>';
+            }
+        }
+        
+        // NEW: Global Turbo Mode Toggle
+        function toggleTurboMode() {
+            isTurboMode = !isTurboMode;
+            const btn = document.getElementById('turbo-mode-btn');
+            
+            if (isTurboMode) {
+                btn.style.background = 'var(--danger)';
+                btn.classList.add('btn-turbo-active');
+                btn.innerText = '⚡ الوضع التيربو مفعّل (إلغاء)';
+                showConfirmation('وضع التيربو مفروض على جميع الغرف!');
+            } else {
+                btn.style.background = 'var(--success)';
+                btn.classList.remove('btn-turbo-active');
+                btn.innerText = 'تفعيل الوضع التيربو لكل الغرف - المواسم أو الطوارئ';
+                showConfirmation('تم إلغاء الوضع التيربو.');
+            }
+            localStorage.setItem('abella_turbo_mode', isTurboMode);
+        }
+
+        // --- CORE LOGIC ---
+
+        function renderRooms() {
+            const container = document.getElementById('rooms-container');
+            
+            // LIFO SORTING LOGIC: Find active rooms
+            const activeRooms = workerState.rooms.filter(r => r.num !== '');
+
+            activeRooms.sort((a, b) => b.id - a.id); // Sort by ID descending (newest first)
+
+            // Identify the single empty input row (it must exist for input)
+            let inputRoom = workerState.rooms.find(r => r.num === '');
+            
+            // Bug 2 Fix: Check for any active undo timer
+            const isAnyUndoActive = activeRooms.some(r => r.undoTimer > 0); 
+
+            let displayOrder = [];
+            // Only show input row if NO undo is active anywhere
+            if (!isAnyUndoActive && inputRoom) { 
+                displayOrder.push(inputRoom); // Input row is always first
+            }
+            displayOrder = displayOrder.concat(activeRooms);
+            
+            
+            // Generate HTML for all rows
+            container.innerHTML = displayOrder.map((r) => {
+                const isStay = r.type === 'stay';
+                const guestStatusRequired = isStay && r.num && r.status === 'pending';
+                
+                // Determine style for sub-select based on validation
+                const guestStatusStyle = guestStatusRequired && !r.guestStatus ? 'border: 2px solid var(--danger)' : '';
+                
+                const subSelectHTML = isStay ? `
+                    <div class="sub-select-container">
+                        <select class="type-select" onchange="updateRoomData(${r.id}, 'guestStatus', this.value)" ${r.status !== 'pending' ? 'disabled' : ''} style="${guestStatusStyle}">
+                            <option value="" disabled ${!r.guestStatus ? 'selected' : ''}>حالة النزيل...</option>
+                            <option value="in" ${r.guestStatus === 'in' ? 'selected' : ''}>النزيل داخل الغرفة</option>
+                            <option value="out" ${r.guestStatus === 'out' ? 'selected' : ''}>النزيل بالخارج</option>
+                        </select>
+                    </div>
+                ` : '';
+
+                return `
+                    <div class="room-row status-${getRoomStatusClass(r)}" id="row-${r.id}">
+                        <div class="timer-display ${getTimerClass(r)}">
+                            ${getTimerText(r)}
+                            <span class="badge">${getBadgeText(r)}</span>
+                        </div>
+                        <div>
+                            <input type="number" class="room-input" placeholder="رقم الغرفة" 
+                                value="${r.num}" onchange="updateRoomData(${r.id}, 'num', this.value)" 
+                                ${r.status !== 'pending' ? 'disabled' : ''}>
+                        </div>
+                        <div>
+                            <select class="type-select" onchange="updateRoomData(${r.id}, 'type', this.value)" ${r.status !== 'pending' ? 'disabled' : ''} style="border-color:${!r.type && r.num ? 'red' : '#cfd8dc'}">
+                                <option value="" disabled ${!r.type ? 'selected' : ''}>حالة الغرفة...</option>
+                                <option value="stay" ${r.type==='stay'?'selected':''}>👤 ساكن</option>
+                                <option value="out" ${r.type==='out'?'selected':''}>🚪 خروج</option>
+                            </select>
+                            ${subSelectHTML}
+                        </div>
+                        <div id="action-cell-${r.id}">
+                            ${getActionBtn(r)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateRoomData(id, field, val) {
+            const r = workerState.rooms.find(x => x.id === id);
+            if(r) { 
+                r[field] = val; 
+                
+                if (field === 'type' && val !== 'stay') {
+                    r.guestStatus = '';
+                }
+                
+                saveState(); 
+                renderRooms(); 
+            }
+        }
+
+        function startRoom(id) {
+            const r = workerState.rooms.find(x => x.id === id);
+            
+            if (!r.num || !r.type) {
+                alert("🔴 يجب كتابة رقم الغرفة واختيار حالتها");
+                return;
+            }
+            if (r.type === 'stay' && !r.guestStatus) {
+                alert("🔴 يجب تحديد حالة النزيل (داخل/خارج) لغرفة الساكن.");
+                return;
+            }
+
+            // Determine if Rain Mode is ON
+            if (isTurboMode) {
+                commitStartRoom(id, true);
+            } else {
+                window.tempRoomId = id; // Store ID globally for modal callback
+                document.getElementById('rain-prompt-modal').style.display = 'flex';
+            }
+        }
+
+        // Commits the room start after Rain Mode selection
+        function commitStartRoom(id, isRainActive) {
+            document.getElementById('rain-prompt-modal').style.display = 'none';
+            const r = workerState.rooms.find(x => x.id === id);
+            
+            // Set limits based on selection (New: +10 minutes)
+            let limitMin = 35; 
+            if (r.type === 'stay') limitMin = isRainActive ? 20 : 25; // 20/25 min
+            if (r.type === 'out') limitMin = isRainActive ? 30 : 35; // 30/35 min
+            
+            r.timerLimit = limitMin * 60000;
+            r.isRainActive = isRainActive; 
+            r.status = 'acknowledging'; // NEW: Start Acknowledging/Travel status
+            r.start = Date.now();
+            r.undoTimer = 10; // 10s rollback check
+            saveState(); 
+            
+            // FIX (Bug 2): Add the new empty row slot now that the current room is committed
+            workerState.rooms = workerState.rooms.filter(room => room.num !== ''); // Remove any lingering empty slots
+            workerState.rooms.push({ 
+                id: Date.now(), num: '', type: '', guestStatus: '', status: 'pending', start: 0, checkStart: 0, undoTimer: 0, timerLimit: 0 
+            });
+
+            renderRooms();
+            showConfirmation(`بدء الانتقال للغرفة ${r.num} (${isRainActive ? 'تيربو' : 'عادي'})`);
+        }
+
+        // Commits the move from Acknowledging to Cleaning
+        function acknowledgeTravel(id) {
+            const r = workerState.rooms.find(x => x.id === id);
+            
+            r.status = 'cleaning';
+            r.start = Date.now(); // Reset start time to NOW for accurate cleaning countdown
+            r.undoTimer = 10; // 10s rollback check for cleaning start
+            
+            saveState(); renderRooms();
+            showConfirmation(`بدء تنظيف الغرفة ${r.num}`);
+        }
+        
+        function checkRoom(id) {
+            const r = workerState.rooms.find(x => x.id === id);
+            r.status = 'checking_live'; 
+            r.checkStart = Date.now();
+            r.undoTimer = 10; // 10s rollback check
+            saveState(); renderRooms();
+            showConfirmation('بدء مرحلة الفحص');
+        }
+
+        function finishInspection(id) {
+            const r = workerState.rooms.find(x => x.id === id);
+            r.status = 'checking'; // FINAL READY STATE FOR MODAL
+            r.undoTimer = 10; // 10s rollback check
+            saveState(); renderRooms();
+            showConfirmation('الغرفة جاهزة للتوثيق');
+        }
+
+        function undo(id) {
+            const r = workerState.rooms.find(x => x.id === id);
+            if(r.undoTimer > 0) {
+                // Rollback Logic
+                if (r.status === 'checking') { 
+                    r.status = 'checking_live';
+                } else if (r.status === 'checking_live') { 
+                    r.status = 'cleaning';
+                    r.checkStart = 0;
+                } else if (r.status === 'cleaning') {
+                    r.status = 'acknowledging'; // Rollback to acknowledging state
+                    r.start = 0; // Clear start time for cleaning
+                } else if (r.status === 'acknowledging') {
+                    r.status = 'pending'; // Rollback to initial pending state
+                    r.start = 0;
+                }
+                r.undoTimer = 0;
+                saveState(); renderRooms();
+            }
+        }
+
+        function getActionBtn(r) {
+            if (!r.num) return '';
+            
+            if (r.status === 'pending' && r.undoTimer <= 0) {
+                 return `<button class="btn-action btn-start" onclick="showActionConfirm('بدء تنظيف الغرفة ${r.num}؟', () => startRoom(${r.id}))">بدء</button>`;
+            }
+
+            if (r.status === 'acknowledging') {
+                 return `<button class="btn-action btn-start" onclick="showActionConfirm('تم العلم وجاري الانتقال للغرفة ${r.num}؟', () => acknowledgeTravel(${r.id}))">تم العلم وجاري الانتقال</button>`;
+            }
+
+            if (r.status === 'cleaning') {
+                return `
+                    <button class="btn-action btn-check" onclick="showActionConfirm('بدء فحص الغرفة ${r.num}؟', () => checkRoom(${r.id}))">✅ تم التنظيف (بدء الفحص)</button>
+                    <button id="undo-btn-${r.id}" class="btn-action btn-undo" style="display:${r.undoTimer > 0 ? 'block' : 'none'}" onclick="undo(${r.id})">تراجع (${r.undoTimer})</button>
+                `;
+            }
+            
+            if (r.status === 'checking_live') {
+                return `
+                    <div style="font-weight:bold; color:var(--warning); font-size:0.8rem; margin-bottom:5px;">عملية الفحص تجري الآن</div>
+                    <button class="btn-action btn-finish" onclick="showActionConfirm('إنهاء فحص الغرفة ${r.num}؟', () => finishInspection(${r.id}))">انتهاء عملية الفحص</button>
+                    <button id="undo-btn-${r.id}" class="btn-action btn-undo" style="display:${r.undoTimer > 0 ? 'block' : 'none'}" onclick="undo(${r.id})">تراجع (${r.undoTimer})</button>
+                `;
+            }
+
+            if (r.status === 'checking') return `
+                 <button class="btn-action btn-finish" onclick="openFinishModal(${r.id})">توثيق وإنهاء</button>
+                 <button id="undo-btn-${r.id}" class="btn-action btn-undo" style="display:${r.undoTimer > 0 ? 'block' : 'none'}" onclick="undo(${r.id})">تراجع (${r.undoTimer})</button>
+            `;
+            return '✅';
+        }
+
+        // --- TICKER ---
+        function tick() {
+            const now = Date.now();
+            let hasOverTimer = false;
+
+            workerState.rooms.forEach(r => {
+                if (r.undoTimer > 0) { 
+                    r.undoTimer--; 
+                    const undoBtn = document.getElementById(`undo-btn-${r.id}`);
+                    if(undoBtn) {
+                        undoBtn.innerText = `تراجع (${r.undoTimer})`;
+                        if (r.undoTimer === 0) renderRooms();
+                    }
+                }
+                
+                if (r.status === 'cleaning' || r.status === 'checking_live' || r.status === 'acknowledging') {
+                    
+                    const limit = r.timerLimit || (25*60000);
+                    let timePassed;
+                    let timeRemainingMs;
+                    
+                    if (r.status === 'acknowledging') {
+                        timePassed = now - r.start;
+                        timeRemainingMs = TRAVEL_TIME_MS - timePassed;
+                        
+                        // Fix for Bug 2: The timer logic for acknowledging
+                        if (timeRemainingMs <= 0) {
+                            acknowledgeTravel(r.id); // Auto-commit to cleaning
+                            timeRemainingMs = 0;
+                        }
+                    } else {
+                        const startT = r.status === 'cleaning' ? r.start : r.checkStart;
+                        timePassed = now - startT;
+                        timeRemainingMs = limit - timePassed;
+
+                        if (timePassed > limit) hasOverTimer = true;
+                    }
+                    
+                    // Audio Alert Logic (Active for both acknowledging and cleaning/checking)
+                    const remainingSeconds = Math.floor(timeRemainingMs / 1000);
+                    if (timeRemainingMs <= 120000 && timeRemainingMs > 0) { // Last 2 minutes
+                        if (remainingSeconds % 15 === 0) {
+                            playAlertSound();
+                        }
+                    }
+
+                    const rowTimer = document.querySelector(`#row-${r.id} .timer-display`);
+                    if(rowTimer) {
+                        rowTimer.className = `timer-display ${getTimerClass(r)}`;
+                        rowTimer.innerHTML = `${getTimerText(r)} <span class="badge">${getBadgeText(r)}</span>`;
+                    }
+                    const rowDiv = document.querySelector(`#row-${r.id}`);
+                    if(rowDiv) rowDiv.className = `room-row status-${getRoomStatusClass(r)}`;
+                }
+            });
+
+            const alertBar = document.getElementById('timer-alert-bar');
+            if(alertBar) alertBar.style.display = hasOverTimer ? 'block' : 'none';
+        }
+
+        function getTimerText(r) {
+            if (r.status === 'pending') return '--:--';
+            
+            const startT = r.status === 'acknowledging' ? r.start : (r.status === 'cleaning' ? r.start : r.checkStart);
+            
+            // Handle Acknowledging Timer (15 minutes constant travel time)
+            if (r.status === 'acknowledging') {
+                const diff = (r.start + TRAVEL_TIME_MS) - Date.now();
+                const mins = Math.floor(Math.abs(diff) / 60000);
+                const secs = Math.floor((Math.abs(diff) % 60000) / 1000);
+                
+                return `${mins}:${secs.toString().padStart(2,'0')}`;
+            }
+            
+            // Handle Cleaning/Checking Timer (Performance Metric)
+            const limit = r.timerLimit || (25*60000);
+            const diff = limit - (Date.now() - startT);
+            const mins = Math.floor(Math.abs(diff) / 60000);
+            const secs = Math.floor((Math.abs(diff) % 60000) / 1000);
+            return `${diff < 0 ? '+' : ''}${mins}:${secs.toString().padStart(2,'0')}`;
+        }
+
+        function getTimerClass(r) {
+            if (r.status === 'pending') return '';
+            if (r.status === 'acknowledging') return 'timer-active'; // Use primary color for acknowledging
+            
+            const startT = r.status === 'cleaning' ? r.start : r.checkStart;
+            const limit = r.timerLimit || (25*60000); 
+            return (Date.now() - startT > limit) ? 'timer-danger' : 'timer-active';
+        }
+
+        function getBadgeText(r) {
+            if(r.status==='acknowledging') return 'انتقال';
+            if(r.status==='cleaning') return 'تنظيف';
+            if(r.status==='checking_live') return 'فحص مباشر';
+            if(r.status==='checking') return 'جاهز للتوثيق';
+            return '';
+        }
+
+        function getRoomStatusClass(r) {
+            if (r.status === 'acknowledging') return 'acknowledging';
+            if (r.status === 'cleaning' || r.status === 'checking_live') {
+                 const startT = r.status === 'cleaning' ? r.start : r.checkStart;
+                 const limit = r.timerLimit || (25*60000);
+                 if (Date.now() - startT > limit) return 'over';
+            }
+            return r.status;
+        }
+
+        // --- FINALIZATION ---
+        let activeRoomId = null;
+        function openFinishModal(id) {
+            activeRoomId = id;
+            const r = workerState.rooms.find(x => x.id === id);
+            
+            document.getElementById('modal-title-text').innerText = `📝 تقرير فحص الغرفة رقم ${r.num}`;
+            
+            document.getElementById('modal-delay').selectedIndex = 0;
+            document.getElementById('modal-notes').selectedIndex = 0;
+            document.getElementById('repair-details-input').value = '';
+            document.getElementById('repair-status-select').selectedIndex = 0;
+            document.getElementById('modal-img-camera-input').value = ""; 
+            document.getElementById('modal-img-pdf-input').value = "";    
+            
+            // Calculate if delay reason should show
+            const startT = r.status === 'cleaning' ? r.start : r.checkStart;
+            const limit = r.timerLimit || (25*60000);
+            const totalElapsedTime = (Date.now() - startT); 
+            const isOverTime = totalElapsedTime > limit;
+
+            const delaySection = document.getElementById('delay-reason-section');
+            const delaySelect = document.getElementById('modal-delay');
+
+            if (isOverTime) {
+                delaySection.style.display = 'block';
+            } else {
+                delaySection.style.display = 'none';
+            }
+            
+            updateImageRequirementUI(); 
+            updateMaintenanceUI(); 
+
+            document.getElementById('final-modal').style.display = 'flex';
+        }
+        function closeModal() { document.getElementById('final-modal').style.display = 'none'; }
+        
+        function updateMaintenanceUI() {
+            const notesSelect = document.getElementById('modal-notes');
+            const maintenanceFields = document.getElementById('maintenance-fields');
+            const imageLabel = document.getElementById('image-label');
+            const repairStatusSelect = document.getElementById('repair-status-select');
+            
+            const needsMaintenance = notesSelect.value === 'تحتاج صيانة';
+            maintenanceFields.style.display = needsMaintenance ? 'block' : 'none';
+            
+            if (needsMaintenance) {
+                 imageLabel.innerText = 'إثبات الحالة (صورة قبل):';
+            } else {
+                imageLabel.innerText = 'إثبات الحالة:'; // Revert label
+            }
+            updateMaintenanceImageStatus();
+        }
+
+        function updateMaintenanceImageStatus() {
+            const repairStatusSelect = document.getElementById('repair-status-select');
+            const imageLabel = document.getElementById('image-label');
+            
+            if (repairStatusSelect.value === 'Completed') {
+                 imageLabel.innerText = 'إثبات الحالة (صورة بعد):';
+            } else {
+                 imageLabel.innerText = 'إثبات الحالة (صورة قبل):';
+            }
+        }
+        
+        function updateImageRequirementUI() {
+            const delaySelect = document.getElementById('modal-delay');
+            const imgCamera = document.getElementById('modal-img-camera-input');
+            const imgPdf = document.getElementById('modal-img-pdf-input');
+            
+            const isMandatory = delaySelect.value === 'الغرفة بها ملاحظات كثيرة';
+            
+            if (isMandatory) {
+                imgCamera.classList.add('required-field');
+                imgPdf.classList.add('required-field');
+            } else {
+                imgCamera.classList.remove('required-field');
+                imgPdf.classList.remove('required-field');
+            }
+        }
+
+        function confirmFinishRoom() {
+            const r = workerState.rooms.find(x => x.id === activeRoomId);
+            const delay = document.getElementById('modal-delay').value;
+            const notes = document.getElementById('modal-notes').value;
+            const startTimeStr = new Date(r.start).toLocaleTimeString('ar-EG', {hour:'numeric', minute:'numeric'});
+            
+            const imgCamera = document.getElementById('modal-img-camera-input');
+            const imgPdf = document.getElementById('modal-img-pdf-input');
+            const hasImage = imgCamera.files.length > 0 || imgPdf.files.length > 0;
+            
+            // Maintenance details capture
+            const needsMaintenance = notes === 'تحتاج صيانة';
+            let repairDetails = 'N/A';
+            let repairStatus = 'N/A';
+
+            if (needsMaintenance) {
+                repairDetails = document.getElementById('repair-details-input').value.trim();
+                repairStatus = document.getElementById('repair-status-select').value;
+                
+                if (!repairDetails) {
+                    alert("🔴 مطلوب: يجب وصف الأغراض التي تحتاج صيانة.");
+                    return;
+                }
+            }
+            
+            // Mandatory image check 
+            if (delay === 'الغرفة بها ملاحظات كثيرة' && !hasImage) {
+                alert("🔴 مطلوب: يجب إرفاق صورة عند اختيار 'الغرفة بها ملاحظات كثيرة'.");
+                return; 
+            }
+            
+            // Final Log Entry
+            const entry = {
+                num: r.num,
+                type: r.type === 'stay' ? 'ساكن' : 'خروج',
+                guestStatus: r.type === 'stay' ? r.guestStatus : 'N/A',
+                cleanTime: Math.ceil((r.checkStart - r.start)/60000),
+                checkTime: Math.ceil((Date.now() - r.checkStart)/60000),
+                delay: delay,
+                notes: notes,
+                hasImage: hasImage, 
+                repairDetails: repairDetails,
+                repairStatus: repairStatus,
+                startTimeStr: startTimeStr,
+                time: new Date().toLocaleTimeString('ar-EG', {hour:'numeric', minute:'numeric'})
+            };
+            
+            workerState.log.unshift(entry);
+            if(!navigator.onLine) buffer.push(entry);
+            
+            workerState.rooms = workerState.rooms.filter(x => x.id !== activeRoomId);
+            
+            saveState(); renderRooms(); closeModal(); updateLogUI(); updateStats();
+            showConfirmation('تم إنجاز وتوثيق الغرفة ' + entry.num);
+            
+            // WhatsApp Report Logic Modified
+            let msg = `✅ *تقرير نظافة غرفة رقم ${entry.num}*\n`;
+            msg += `🕒 وقت البدء: ${entry.startTimeStr}\n`;
+            
+            // Detailed Reporting
+            let detailReport = '';
+            if (entry.delay !== 'لا يوجد تأخير') {
+                detailReport += `\n🛑 سبب التأخير: ${entry.delay}`;
+            } else {
+                 detailReport += `\n✅ لا يوجد تأخير`;
+            }
+            
+            if (entry.notes === 'تحتاج صيانة') {
+                 detailReport += `\n🛠️ الصيانة: ${repairStatus}. التفاصيل: ${repairDetails}`;
+            } else if (entry.notes !== 'لا يوجد ملاحظات') {
+                 detailReport += `\n📝 ملاحظات الفحص: ${entry.notes}`;
+            } else {
+                 detailReport += `\n📝 لا يوجد ملاحظات فحص`;
+            }
+
+            msg += `----------------\n`;
+            msg += `🧹 تم الانتهاء من التنظيف في: ${entry.cleanTime}د\n`;
+            msg += `🔍 تم الانتهاء من الفحص في: ${entry.checkTime}د\n`;
+            msg += `----------------\n`;
+            msg += `${detailReport}\n`;
+            
+            if (hasImage) {
+                msg += `\n🔗 *رابط الصورة:* [تم إرفاق صورة]`;
+            }
+            
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        // --- UTILS ---
+        function updateLogUI() {
+            const list = document.getElementById('worker-log-list');
+            if(workerState.log.length === 0) return;
+            list.innerHTML = workerState.log.map((l, index) => `
+                <div style="border-bottom:1px solid #eee; padding:8px 0; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:bold; color:var(--primary);">${l.num} <span style="font-size:0.7rem; color:#999;">(${l.type})</span></div>
+                        <div style="font-size:0.7rem; color:#666;">بدأ: ${l.startTimeStr}</div>
+                        ${l.guestStatus === 'in' ? '<span style="font-size:0.7rem; color:var(--danger)">⚠️ نزيل داخل</span>' : ''}
+                    </div>
+                    <div style="text-align:left; font-size:0.75rem; display:flex; gap:10px;">
+                        ${l.hasImage ? `<button onclick="showLogImage(${index})" style="border:none; background:none; cursor:pointer; color:var(--upgrade); padding:0;">📸</button>` : ''}
+                        <div>
+                            <div>${l.cleanTime}د تنظيف</div>
+                            <div style="color:${l.delay !== 'لا يوجد تأخير' ? 'red' : '#999'};">${l.delay !== 'لا يوجد تأخير' ? 'تأخير!' : 'تم'}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showLogImage(index) {
+            const logEntry = workerState.log[index];
+            alert(`📸 تم التقاط صورة لملاحظات الغرفة رقم ${logEntry.num}.`);
+        }
+
+        function updateStats() {
+            const log = workerState.log;
+            const totalCompleted = log.length;
+            
+            // Segmentation
+            const countStay = log.filter(l => l.type === 'ساكن').length;
+            const countOut = totalCompleted - countStay;
+            
+            // Time Metrics (Clean Time + Check Time = Total Time)
+            const allTotalTimes = log.map(l => l.cleanTime + l.checkTime).filter(t => t > 0);
+            const cleanTimesOut = log.filter(l => l.type === 'خروج' && l.cleanTime > 0).map(l => l.cleanTime + l.checkTime);
+            const cleanTimesStay = log.filter(l => l.type === 'ساكن' && l.cleanTime > 0).map(l => l.cleanTime + l.checkTime);
+            
+            // Finding Fastest
+            const fastestOut = cleanTimesOut.length > 0 ? cleanTimesOut.reduce((min, current) => Math.min(min, current)) : null;
+            const fastestStay = cleanTimesStay.length > 0 ? cleanTimesStay.reduce((min, current) => Math.min(min, current)) : null;
+            
+            // Find rooms corresponding to fastest time
+            const fastestOutRoom = log.find(l => (l.cleanTime + l.checkTime) === fastestOut && l.type === 'خروج');
+            const fastestStayRoom = log.find(l => (l.cleanTime + l.checkTime) === fastestStay && l.type === 'ساكن');
+
+            const maxTimeMs = allTotalTimes.length > 0 ? Math.max(...allTotalTimes) : 0;
+            const minTimeMs = allTotalTimes.length > 0 ? Math.min(...allTotalTimes) : 0;
+            const totalTimeMs = allTotalTimes.reduce((sum, time) => sum + time, 0);
+            const avgTimeMs = totalCompleted > 0 ? totalTimeMs / totalCompleted : 0;
+            const overTimerCount = log.filter(l => l.delay !== 'لا يوجد تأخير').length;
+
+            // UI Updates (Standard Stats)
+            document.getElementById('stat-completed').innerText = totalCompleted;
+            document.getElementById('stat-avg').innerText = formatTimeDuration(avgTimeMs);
+            document.getElementById('stat-over').innerText = overTimerCount;
+
+            // UI Updates (Detailed Segmentation)
+            document.getElementById('stat-out-count').innerText = countOut;
+            document.getElementById('stat-stay-count').innerText = countStay;
+            
+            document.getElementById('stat-max-time').innerText = maxTimeMs ? formatTimeDuration(maxTimeMs) : '--';
+            document.getElementById('stat-min-time').innerText = minTimeMs ? formatTimeDuration(minTimeMs) : '--';
+            
+            // Fastest Room Circular Display
+            if (fastestOutRoom) {
+                document.getElementById('fastest-out-num').innerText = fastestOutRoom.num;
+                document.getElementById('fastest-out-time').innerText = formatTimeDuration(fastestOut);
+            } else {
+                document.getElementById('fastest-out-num').innerText = '--';
+                document.getElementById('fastest-out-time').innerText = '0د 0ث';
+            }
+             if (fastestStayRoom) {
+                document.getElementById('fastest-stay-num').innerText = fastestStayRoom.num;
+                document.getElementById('fastest-stay-time').innerText = formatTimeDuration(fastestStay);
+            } else {
+                document.getElementById('fastest-stay-num').innerText = '--';
+                document.getElementById('fastest-stay-time').innerText = '0د 0ث';
+            }
+        }
+
+        function formatTimeDuration(ms) {
+            const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            if (minutes === 0 && seconds === 0 && ms > 0) return '<1ث';
+            return `${minutes}د ${seconds}ث`;
+        }
+
+        function toggleRainMode() {
+            // This function is obsolete now that the prompt modal is used.
+        }
+
+        function saveState() { localStorage.setItem('abella_v6_fixed', JSON.stringify(workerState)); }
+        function loadState() {
+            const d = JSON.parse(localStorage.getItem('abella_v6_fixed'));
+            if(d) { 
+                workerState.log = d.log || [];
+                
+                if (d.rooms && d.rooms.length > 0) {
+                    workerState.rooms = d.rooms.filter(r => r.status !== 'pending'); 
+                }
+                
+                const dTurbo = localStorage.getItem('abella_turbo_mode');
+                if (dTurbo) isTurboMode = (dTurbo === 'true');
+                
+                // Update Turbo Button State on load
+                const btn = document.getElementById('turbo-mode-btn');
+                if (btn) {
+                    if (isTurboMode) {
+                        btn.style.background = 'var(--danger)';
+                        btn.classList.add('btn-turbo-active');
+                        btn.innerText = '⚡ الوضع التيربو مفعّل (إلغاء)';
+                    } else {
+                        btn.style.background = 'var(--success)';
+                        btn.classList.remove('btn-turbo-active');
+                        btn.innerText = 'تفعيل الوضع التيربو لكل الغرف - المواسم أو الطوارئ';
+                    }
+                }
+                
+                if (workerState.rooms.length === 0 || workerState.rooms[workerState.rooms.length-1].num !== '') {
+                     workerState.rooms.push({ 
+                        id: Date.now(), num: '', type: '', guestStatus: '', status: 'pending', start: 0, checkStart: 0, undoTimer: 0, limit: 0 
+                    });
+                }
+
+                updateLogUI(); 
+            }
+        }
+
+        function checkConn() {
+            const el = document.getElementById('offline-indicator');
+            el.style.display = navigator.onLine ? 'none' : 'block';
+        }
+        
+        function generateDailyReport() {
+            const total = workerState.log.length;
+            const delayCount = workerState.log.filter(l => l.delay !== 'لا يوجد تأخير').length;
+            const msg = `📊 *تقرير يومي (فندق أبيلا)*\n📅 التاريخ: ${new Date().toLocaleDateString()}\n\n✅ تم إنجاز: ${total} غرفة\n⚠️ غرف متأخرة: ${delayCount}\n\n*تفاصيل سريعة:*\n` + workerState.log.map(l => `${l.num}: ${l.cleanTime}د/${l.checkTime}د (بدأ ${l.startTimeStr})`).join('\n');
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+        
+        function isTimeAllowed() {
+            const now = new Date();
+            const hours = now.getHours();
+            return hours >= 1 && hours < 24; 
+        }
+
+        function clearAllData() {
+            workerState.rooms = [{ 
+                id: Date.now(), num: '', type: '', guestStatus: '', status: 'pending', start: 0, checkStart: 0, undoTimer: 0, limit: 0 
+            }];
+            
+            workerState.log = [];
+            buffer = [];
+            localStorage.removeItem('abella_buffer_v6'); 
+            
+            isTurboMode = false;
+            localStorage.removeItem('abella_turbo_mode');
+
+            saveState(); 
+            renderRooms();
+            updateStats();
+            document.getElementById('password-modal').style.display = 'none';
+            showConfirmation("✅ تم تصفية البيانات بنجاح وبدء يوم جديد.");
+        }
+
+        function showResetModal() {
+            const isAllowed = isTimeAllowed();
+            const statusMsg = document.getElementById('reset-status-msg');
+            
+            document.getElementById('password-modal').style.display = 'flex';
+            document.getElementById('confirm-reset-btn').onclick = function() { checkPasswordAndReset('full_reset'); };
+            document.getElementById('password-modal-title').innerText = 'تصفية شاملة للبيانات';
+
+            if (isAllowed) {
+                statusMsg.innerHTML = '⚠️ تجاوزت الساعة 1:00 ص. أدخل كلمة السر لتصفية اليوم.';
+            } else {
+                statusMsg.innerHTML = '🔒 لم يحن وقت التصفية التلقائية (1:00 ص). أدخل كلمة السر لتجاوز القيد الزمني.';
+            }
+        }
+        
+        function showLogClearModal() {
+            document.getElementById('password-modal').style.display = 'flex';
+            document.getElementById('confirm-reset-btn').onclick = function() { checkPasswordAndReset('log_only'); };
+            document.getElementById('password-modal-title').innerText = 'تصفية سجل العمليات المنجزة (فقط)';
+            document.getElementById('reset-status-msg').innerHTML = 'أدخل كلمة مرور المسؤول لتصفية السجل الحالي.';
+        }
+        
+        function clearLogOnly() {
+            workerState.log = [];
+            saveState();
+            renderRooms();
+            updateStats();
+            updateLogUI(); // CRITICAL FIX: Ensure log UI updates immediately
+            document.getElementById('password-modal').style.display = 'none';
+            showConfirmation("✅ تم تصفية سجل العمليات بنجاح.");
+        }
+
+
+        function checkPasswordAndReset(actionType = 'full_reset') {
+            const passwordInput = document.getElementById('admin-password').value.trim();
+            
+            if (passwordInput === ADMIN_PASSWORD) {
+                if (actionType === 'log_only') {
+                    clearLogOnly();
+                } else {
+                    clearAllData();
+                }
+            } else {
+                if (isTimeAllowed()) {
+                    alert("❌ كلمة السر غير صحيحة. لا يمكن التصفية إلا بكلمة سر صحيحة بعد 1:00 ص.");
+                } else {
+                    alert("❌ كلمة السر غير صحيحة. التصفية مسموحة فقط بكلمة سر صحيحة أو بعد 1:00 ص.");
+                }
+            }
+            document.getElementById('admin-password').value = ''; 
+        }
+    </script>
+</body>
+</html>
