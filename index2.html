@@ -53,13 +53,27 @@
             border-radius: 20px; padding: 15px; margin-bottom: 20px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: var(--shadow);
+            /* 🔥 (هام) منع العناصر من التداخل */
+            flex-wrap: nowrap;
         }
         body.dark-mode .header-glass { background: rgba(45,45,45,0.7); border-color:rgba(255,255,255,0.1); }
         
         .header-title { display: flex; align-items: center; gap: 10px; flex: 1; }
         .header-title h1 { font-size: 1rem; margin: 0; color: var(--primary); font-weight: 800; line-height: 1.2; }
         
-        .tools-area { display: flex; gap: 8px; }
+        /* 🔥 (هام) إزاحة الأدوات لليسار لترك مكان للزر الأخضر */
+        .tools-area { 
+            display: flex; 
+            gap: 8px; 
+            margin-left: 130px; 
+        }
+        
+        /* تحسين للموبايل الصغير */
+        @media (max-width: 380px) {
+            .header-title h1 { font-size: 0.8rem; }
+            .tools-area { margin-left: 110px; }
+        }
+
         .tools-btn { background: var(--bg-body); border: 1px solid var(--border-color); padding: 8px; border-radius: 10px; cursor: pointer; }
 
         /* --- VIEW CONTROLLERS --- */
@@ -140,14 +154,8 @@
         /* Indicators */
         .quiet-notif { background: var(--warning); color: #333; padding: 8px; text-align: center; border-radius: 8px; font-size: 0.8rem; font-weight: bold; margin-bottom: 10px; display: none; }
         
-        /* Sync Indicator */
-        #sync-indicator {
-            position: fixed; top: 15px; left: 15px;
-            background: rgba(0,0,0,0.7); color: white;
-            padding: 5px 10px; border-radius: 15px;
-            font-size: 0.7rem; display: none; z-index: 9999;
-            backdrop-filter: blur(5px);
-        }
+        /* Sync Indicator Hidden */
+        #sync-indicator { display: none !important; }
 
         /* Stats Grid */
         .stats-grid { 
@@ -2103,3 +2111,5 @@
     </script>
 </body>
 </html>
+
+}
