@@ -637,18 +637,26 @@
 
             const mainDocRef = db.collection(collectionName).doc('main');
             
-            // Add timestamp for data integrity
+            // 🔥 المنطق الصحيح: استخدام update() للحفاظ على سجل العمال
             const dataToSave = { 
-                ...s, 
-                log: s.log || [], // 🔥 الحفاظ على سجل العمال (Worker Log)
+                stayS: s.stayS, stayR: s.stayR,
+                potS: s.potS, potR: s.potR,
+                bkS: s.bkS, bkR: s.bkR,
+                recS: s.recS, recR: s.recR,
+                history: s.history,
+                log: s.log || [], // 🔥 تأكد من إرسال سجل العمال لكي لا يحذفه Firestore
                 timestamp: firebase.firestore.FieldValue.serverTimestamp() 
             };
 
-            mainDocRef.set(dataToSave)
+            mainDocRef.update(dataToSave) // Changed set() to update()
                 .then(() => {
                     if (indicator) setTimeout(() => indicator.style.display = 'none', 1000);
                 })
                 .catch((error) => {
+                    // إذا لم يكن المستند موجوداً، ننشئه بـ set()
+                    if (error.code === 'not-found') {
+                         mainDocRef.set(dataToSave);
+                    }
                     console.error("Error saving:", error);
                     if (indicator) indicator.innerText = '❌ خطأ';
                 });
