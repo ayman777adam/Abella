@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Adora</title>
+    <title>Adora | متابعة العمال (Housekeeping Tracker)</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
@@ -265,6 +265,28 @@
         #dev-footer-fixed { position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; font-size: 0.7rem; color: var(--text-sec); background: var(--bg-card); padding: 5px 0; border-top: 1px solid var(--border-color); z-index: 1000; }
         .worker-action-row { display: flex; gap: 10px; width: 100%; margin-bottom: 10px; flex-wrap: wrap; }
         .worker-action-row .full-btn { flex: 1 1 48%; }
+
+        /* 🔥 Desktop Optimization for Worker View */
+        @media (min-width: 768px) {
+            .container { 
+                max-width: 700px; 
+                margin: 0 auto;
+            }
+            .header-glass {
+                max-width: 700px;
+            }
+            .stats-grid { 
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 20px;
+            }
+            .room-row {
+                grid-template-columns: 50px 1fr 1fr auto;
+                padding: 15px;
+            }
+            .worker-action-row {
+                max-width: 700px;
+            }
+        }
     </style>
 </head>
 <body class="worker-mode"> 
@@ -273,7 +295,9 @@
          <div class="header-right">
                 <div class="header-logo" style="display:flex;align-items:center;gap:10px;">
                     <img src="adora-logo.png" 
-                         alt="ADORA Logo" style="height:70px; width:auto; background:white; border-radius:8px;">              
+                         alt="ADORA Logo" style="height:70px; width:auto; background:white; border-radius:8px;">
+                </div>
+                <span class="header-subtitle">تنفيذ - <span class="dev-name">ايمن ابو ورده</span></span>
             </div>
                 <div id="offline-indicator-badge">📡 غير متصل</div>
                 <button class="tools-btn" onclick="document.body.classList.toggle('dark-mode')" title="الوضع الليلي">🌙</button>
@@ -1017,7 +1041,7 @@
         function openFinishModal(id) { app.openFinishModal(id); } 
 
         function generateDailyReport() {
-            let msg = `*تقرير منظومة المتابعة - ${new Date().toLocaleDateString('ar-EG')}*%0A`;
+            let msg = `*تقرير منظومة Adora للمتابعة - ${new Date().toLocaleDateString('ar-EG')}*%0A`;
             msg += `--------------------------------%0A`;
             
             app.state.log.forEach(l => {
@@ -1037,8 +1061,8 @@
                 if(l.status === 'تحتاج صيانة') msg += `\n🛠️ الحالة: تحتاج صيانة`;
                 else msg += `\n✅ الحالة: جاهزة`;
 
-                if(l.isLate) msg += `\n⚠️ تأخير: ${l.delayReason}`;
-                if(l.maintDesc) msg += `\n📝 ملاحظة: ${l.maintDesc}`;
+                if(l.isLate) waMsg += `\n⚠️ تأخير: ${l.delayReason}`;
+                if(l.maintDesc) waMsg += `\n📝 ملاحظة: ${l.maintDesc}`;
                 
                 msg += `--------------------------------%0A`;
             });

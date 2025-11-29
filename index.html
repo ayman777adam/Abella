@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Adora</title>
+    <title>Adora | تقرير الإشغال (Occupancy Report)</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         /* --- 1. Tanafos Theme Variables --- */
@@ -251,11 +251,56 @@
             .price-mode-std, .price-mode-med, .price-mode-high { -webkit-print-color-adjust: exact; }
         }
 
-</style>
-</head>
-<body>
+        /* 🔥 Desktop Optimization (تعديلات الشاشات الواسعة) */
+        @media (min-width: 768px) {
+            .container { 
+                max-width: 900px; /* توسيع الحاوية المركزية */
+            }
+            .header-glass {
+                padding: 15px 30px; 
+            }
+            .dashboard { 
+                grid-template-columns: 1fr 1fr 1fr 1fr; /* زيادة عدد الأعمدة في لوحة التحكم */
+                gap: 20px; 
+            }
+            .card {
+                padding: 20px 10px;
+            }
+            .section {
+                padding: 20px 30px;
+            }
+            .control-row {
+                margin-bottom: 15px;
+            }
+            .control-label {
+                flex: 1.5;
+                font-size: 1rem;
+            }
+            .stepper {
+                padding: 3px; 
+            }
+            .step-btn {
+                width: 35px; /* تصغير حجم الأزرار */
+                height: 35px;
+                font-size: 1.2rem;
+            }
+            .val-display {
+                font-size: 1.2rem;
+                width: 45px;
+            }
+            .price-bar {
+                padding: 15px 25px; /* زيادة التوسيع الداخلي */
+            }
+            .sticky-footer {
+                left: auto;
+                right: auto;
+                width: 100%;
+                max-width: 900px;
+                margin: 0 auto;
+            }
+        }
 
-  </style>
+</style>
 </head>
 <body>
 
@@ -610,10 +655,10 @@
         function getReportText() {
             const t = new Date().toLocaleTimeString('ar-EG',{hour:'numeric',minute:'numeric',hour12:true});
             const upgMsg = calc.upg > 0 ? `\n(⚠️ تم خصم ${calc.upg} لترقية المفرد)` : "";
-            const ps = document.getElementById('p-s').innerText;
+       const ps = document.getElementById('p-s').innerText;
             const pr = document.getElementById('p-r').innerText;
             
-            return `*تقرير فندق أبيلا 🏨*\n🕒 ${t}\n------------------\n📊 *متاح للبيع*\n• مفرد: *${calc.netS}*\n• غرفة وصالة: *${calc.netR}* ${upgMsg}\n------------------\n💰 *الأسعار المقترحة*\n• مفرد: ${ps} | وصالة: ${pr}\n------------------\n📝 *التفاصيل*\n• إقامة: ${s.stayS} مفرد | ${s.stayR} وصالة\n• خروج: ${s.potS} مفرد | ${s.potR} وصالة\n• حجوزات: ${s.bkS+s.recS} مفرد | ${s.bkR+s.recR} وصالة\n------------------\n💡 *النصيحة*\n1️⃣ ${calc.netS>0?'✅ افتح مفرد':'⛔ أغلق مفرد'}\n2️⃣ ${calc.netR>0?'✅ افتح وصالة':'⛔ أغلق وصالة'}`;
+            return `*تقرير منظومة Adora 🏨*\n🕒 ${t}\n------------------\n📊 *متاح للبيع*\n• مفرد: *${calc.netS}*\n• غرفة وصالة: *${calc.netR}* ${upgMsg}\n------------------\n💰 *الأسعار المقترحة*\n• مفرد: ${ps} | وصالة: ${pr}\n------------------\n📝 *التفاصيل*\n• إقامة: ${s.stayS} مفرد | ${s.stayR} وصالة\n• خروج: ${s.potS} مفرد | ${s.potR} وصالة\n• حجوزات: ${s.bkS+s.recS} مفرد | ${s.bkR+s.recR} وصالة\n------------------\n💡 *النصيحة*\n1️⃣ ${calc.netS>0?'✅ افتح مفرد':'⛔ أغلق مفرد'}\n2️⃣ ${calc.netR>0?'✅ افتح وصالة':'⛔ أغلق وصالة'}`;
         }
         function sendWhatsApp() { window.open(`https://wa.me/?text=${encodeURIComponent(getReportText())}`, '_blank'); }
         function copyText() { navigator.clipboard.writeText(getReportText()).then(() => { alert("تم نسخ التقرير 📋"); }); }
