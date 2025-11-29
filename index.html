@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تقرير إشغال فندق أبيلا</title>
+    <title>Adora</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         /* --- 1. Tanafos Theme Variables --- */
@@ -29,12 +29,16 @@
             --shadow: 0 4px 20px rgba(0, 151, 167, 0.08);
         }
 
-        body.dark-mode {
-            --bg-body: #1e1e1e;
-            --bg-card: #2d2d2d;
-            --text-main: #dfe6e9;
-            --text-sec: #b2bec3;
-            --border-color: #444;
+        /* 🔥 الوضع الليلي الاحترافي (Deep Slate Theme) */
+        body.dark-mode { 
+            --bg-body: #0f172a; 
+            --bg-card: #1e293b; 
+            --text-main: #f1f5f9; 
+            --text-sec: #94a3b8; 
+            --border-color: #334155; 
+            --primary: #38bdf8; 
+            --primary-light: rgba(56, 189, 248, 0.1);
+            --shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
 
         body {
@@ -80,19 +84,18 @@
         body.dark-mode .header-glass { background: rgba(45,45,45,0.7); border-color:rgba(255,255,255,0.1); }
         .header-title h1 { margin: 0; font-size: 1.1rem; color: var(--primary); font-weight: 800; }
         
-        /* 🔥 التعديل الجوهري: إزاحة منطقة الأدوات لليسار لترك مكان للزر الأخضر */
+        /* 🔥 التعديل الجوهري: إزالة الإزاحة لتمكين ترتيب العناصر تلقائياً */
         .tools-area { 
             display: flex; 
             align-items: center; 
             gap: 10px; 
-            /* هذه المسافة تضمن عدم تغطية الزر الأخضر للأدوات */
-            margin-left: 130px; 
+            /* تم إزالة الهامش لتمكين ترتيب العناصر تلقائياً */
         }
         
         /* تحسين للموبايل الصغير جداً */
         @media (max-width: 380px) {
             .header-title h1 { font-size: 0.9rem; }
-            .tools-area { margin-left: 110px; }
+            /* تم إزالة الهامش أيضاً */
         }
 
         .tools-btn { background: var(--bg-body); border: 1px solid var(--border-color); padding: 8px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; color: var(--text-main); }
@@ -248,21 +251,27 @@
             .price-mode-std, .price-mode-med, .price-mode-high { -webkit-print-color-adjust: exact; }
         }
 
-    </style>
+</style>
+</head>
+<body>
+
+  </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header-glass">
-            <div class="header-title">
-                <h1>تقرير إشغال فندق أبيلا</h1>
-            </div>
+           <div class="header-title" style="display:flex;align-items:center;gap:10px;">
+    <img src="adora-logo.png" 
+         alt="ADORA Logo" style="height:70px; width:auto;">
+</div>
+
             <div class="tools-area">
+                <button class="tools-btn" onclick="showResetModal()">🔄</button>
+                <button class="tools-btn" onclick="toggleDarkMode()">🌙</button>
                 <div class="season-toggle" id="season-btn" onclick="toggleSeason()">
                     <div class="season-dot"></div> موسم
                 </div>
-                <button class="tools-btn" onclick="toggleDarkMode()">🌙</button>
-                <button class="tools-btn" onclick="showResetModal()">🔄</button>
             </div>
         </div>
         
