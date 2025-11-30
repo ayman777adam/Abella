@@ -4,324 +4,330 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Adora | تقرير الإشغال (Occupancy Report)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
     <style>
-        /* --- 1. Tanafos Theme Variables --- */
+        /* ============================================================
+           CSS (Adora Deluxe Theme - Occupancy V2)
+           ============================================================ */
         :root {
-            --bg-body: #f4f6f8;
-            --bg-card: #ffffff;
-            --text-main: #37474f;
-            --text-sec: #78909c;
-            --border-color: #cfd8dc;
+            /* Adora Identity Colors */
+            --adora-turquoise: #00838f;
+            --adora-orange: #ff6f00;
             
-            --primary: #0097a7;       /* Teal */
-            --primary-light: #e0f7fa;
+            --bg-body: #f4f8f9;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --text-main: #263238;
+            --text-sec: #546e7a;
+            --border-color: rgba(0, 131, 143, 0.1);
+            
+            --primary: var(--adora-turquoise);
+            --primary-light: rgba(0, 131, 143, 0.08);
             
             --success: #00b894;
-            --danger: #d63031;
-            --warning: #f1c40f;
-            --upgrade: #7e57c2;       /* Purple for Upgrade */
+            --danger: #ff5252;
+            --warning: var(--adora-orange);
+            --upgrade: #7e57c2;
+
+            /* Room Colors (Adora Adapted) */
+            --color-single: #00acc1;  /* Cyan-ish Turquoise */
+            --color-suite: #ffa000;   /* Deep Amber */
             
-            /* Room Colors (Theme Adapted) */
-            --color-single: #26c6da;  /* Cyan */
-            --color-suite: #ffca28;   /* Amber */
+            --shadow: 0 10px 40px -5px rgba(0, 131, 143, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
             
-            --shadow: 0 4px 20px rgba(0, 151, 167, 0.08);
+            /* Glassmorphism Variables */
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+            --blur-val: blur(16px);
         }
 
-        /* 🔥 الوضع الليلي الاحترافي (Deep Slate Theme) */
+        /* 🔥 الوضع الليلي الفاخر (Adora Night) */
         body.dark-mode { 
-            --bg-body: #0f172a; 
-            --bg-card: #1e293b; 
-            --text-main: #f1f5f9; 
-            --text-sec: #94a3b8; 
-            --border-color: #334155; 
-            --primary: #38bdf8; 
-            --primary-light: rgba(56, 189, 248, 0.1);
-            --shadow: 0 4px 20px rgba(0,0,0,0.4);
+            --bg-body: #002529; 
+            --bg-card: rgba(0, 54, 58, 0.8); 
+            --text-main: #e0f7fa; 
+            --text-sec: #80cbc4; 
+            --border-color: rgba(255, 255, 255, 0.1); 
+            --primary: #4dd0e1; 
+            --primary-light: rgba(77, 208, 225, 0.1);
+            --shadow: 0 10px 30px rgba(0,0,0,0.5);
+            --glass-bg: rgba(0, 30, 33, 0.75);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.05);
+            --warning: #ffab40;
         }
 
         body {
             font-family: 'Tajawal', sans-serif;
             background-color: var(--bg-body);
-            background-image: radial-gradient(#b0bec5 1px, transparent 1px);
-            background-size: 20px 20px;
             color: var(--text-main);
             margin: 0;
-            padding: 15px 15px 220px 15px;
+            padding: 10px 15px 220px 15px;
             -webkit-tap-highlight-color: transparent;
             transition: 0.3s;
             overflow-x: hidden;
-        }
-
-        body.dark-mode { background-image: none; }
-        
-        body.zen-active .dashboard, 
-        body.zen-active .header-glass, 
-        body.zen-active .price-bar, 
-        body.zen-active .sticky-footer {
-            opacity: 0.1; filter: blur(2px); transition: 0.3s;
+            
+            /* خلفية خطوط Adora */
+            background-image: 
+                linear-gradient(45deg, rgba(0, 131, 143, 0.03) 25%, transparent 25%, transparent 75%, rgba(0, 131, 143, 0.03) 75%, rgba(0, 131, 143, 0.03)), 
+                linear-gradient(45deg, rgba(0, 131, 143, 0.03) 25%, transparent 25%, transparent 75%, rgba(0, 131, 143, 0.03) 75%, rgba(0, 131, 143, 0.03));
+            background-position: 0 0, 30px 30px;
+            background-size: 60px 60px;
         }
 
         .container { max-width: 500px; margin: 0 auto; }
 
-        /* --- Header Glass --- */
+        /* --- Adora Header Glass --- */
         .header-glass {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border: 1px solid #fff;
-            border-radius: 20px; 
-            padding: 15px; 
-            margin-bottom: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur-val); -webkit-backdrop-filter: var(--blur-val);
+            border: var(--glass-border);
+            border-radius: 30px; 
+            padding: 10px 20px; 
+            margin-bottom: 25px;
+            margin-top: 10px;
             display: flex; 
             justify-content: space-between; 
             align-items: center;
-            box-shadow: var(--shadow);
-            
-            /* 🔥 إضافة flex-wrap لمنع تكسر التصميم في الشاشات الصغيرة جداً */
-            flex-wrap: nowrap; 
-        }
-        body.dark-mode .header-glass { background: rgba(45,45,45,0.7); border-color:rgba(255,255,255,0.1); }
-        .header-title h1 { margin: 0; font-size: 1.1rem; color: var(--primary); font-weight: 800; }
-        
-        /* 🔥 التعديل الجوهري: إزالة الإزاحة لتمكين ترتيب العناصر تلقائياً */
-        .tools-area { 
-            display: flex; 
-            align-items: center; 
-            gap: 10px; 
-            /* تم إزالة الهامش لتمكين ترتيب العناصر تلقائياً */
+            box-shadow: var(--glass-shadow);
+            position: sticky; top: 10px; z-index: 100;
+            flex-wrap: nowrap;
         }
         
-        /* تحسين للموبايل الصغير جداً */
-        @media (max-width: 380px) {
-            .header-title h1 { font-size: 0.9rem; }
-            /* تم إزالة الهامش أيضاً */
+        .header-title img {
+            max-height: 50px; width: auto; /* ضبط حجم الشعار ليتناسب مع الهيدر الأنيق */
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
         }
 
-        .tools-btn { background: var(--bg-body); border: 1px solid var(--border-color); padding: 8px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; color: var(--text-main); }
+        .tools-area { 
+            display: flex; align-items: center; gap: 8px; 
+        }
+
+        .tools-btn { 
+            background: rgba(0,0,0,0.03); border: none; padding: 8px; border-radius: 50%; 
+            width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1.1rem; transition: 0.2s; color: var(--text-main);
+        }
+        .tools-btn:active { transform: scale(0.9); background: var(--primary-light); }
 
         .season-toggle {
-            display: flex; align-items: center; gap: 5px;
-            background: var(--bg-body); border: 1px solid var(--border-color);
-            padding: 5px 10px; border-radius: 20px; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            padding: 6px 12px; border-radius: 50px; cursor: pointer;
             font-size: 0.8rem; font-weight: bold; transition: 0.3s; color: var(--text-sec);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        .season-toggle.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
-        .season-dot { width: 10px; height: 10px; border-radius: 50%; background: #cfd8dc; transition:0.3s;}
-        .season-toggle.active .season-dot { background: var(--primary); box-shadow: 0 0 5px var(--primary); }
+        .season-toggle.active { background: var(--primary); border-color: var(--primary); color: white; }
+        .season-dot { width: 8px; height: 8px; border-radius: 50%; background: #cfd8dc; transition:0.3s;}
+        .season-toggle.active .season-dot { background: white; box-shadow: 0 0 5px rgba(255,255,255,0.5); }
 
-        /* --- Dashboard --- */
-        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        /* --- Dashboard Cards --- */
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .card { 
-            background: var(--bg-card); border-radius: 18px; padding: 15px; 
+            background: var(--bg-card); border-radius: 28px; padding: 20px; 
             position: relative; box-shadow: var(--shadow); border: 1px solid var(--border-color);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border-bottom: 3px solid transparent; transition: transform 0.2s;
+            border-bottom: none; transition: transform 0.2s;
+            backdrop-filter: blur(5px);
         }
-        .chart-container { position: relative; width: 70px; height: 70px; margin-bottom: 5px; }
-        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
-        .circle-bg { fill: none; stroke: var(--primary-light); stroke-width: 3.8; }
-        .circle { fill: none; stroke-width: 2.8; stroke-linecap: round; transition: stroke-dasharray 0.6s ease; }
-        .percentage { fill: var(--text-main); font-family: 'Tajawal'; font-weight: bold; font-size: 0.5em; text-anchor: middle; }
+        .card:active { transform: scale(0.98); }
         
-        .card-label { font-size: 0.85rem; font-weight: 700; }
-        .card-sub { font-size: 0.7rem; opacity: 0.7; }
+        .chart-container { position: relative; width: 80px; height: 80px; margin-bottom: 8px; }
+        .circular-chart { display: block; margin: 0 auto; max-width: 100%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: rgba(0,0,0,0.05); stroke-width: 3; }
+        body.dark-mode .circle-bg { stroke: rgba(255,255,255,0.05); }
+        
+        .circle { fill: none; stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.6s ease; }
+        .percentage { fill: var(--text-main); font-family: 'Tajawal'; font-weight: 800; font-size: 0.55em; text-anchor: middle; }
+        
+        .card-label { font-size: 0.9rem; font-weight: 800; margin-bottom: 2px; }
+        .card-sub { font-size: 0.7rem; opacity: 0.7; font-weight: bold; }
         
         .c-single .circle { stroke: var(--color-single); } .c-single .card-label { color: var(--color-single); }
         .c-suite .circle { stroke: var(--color-suite); } .c-suite .card-label { color: var(--color-suite); }
 
         /* --- Price Bar --- */
         .price-bar {
-            background: var(--bg-card); border-radius: 15px; padding: 10px 15px;
+            background: var(--bg-card); border-radius: 24px; padding: 15px 20px;
             margin-bottom: 25px; box-shadow: var(--shadow); border: 1px solid var(--border-color);
             display: flex; justify-content: space-between; align-items: center;
-            border-left: 5px solid #ccc; transition: 0.3s;
+            border-left: none; position: relative; overflow: hidden;
+            backdrop-filter: blur(5px);
         }
-        .price-label { font-size: 0.8rem; color: var(--text-sec); font-weight: 600; }
-        .price-values { display: flex; gap: 15px; font-weight: 800; font-size: 1rem; }
-        .p-val span { font-size: 0.7rem; font-weight: normal; opacity: 0.7; margin-left: 3px; }
+        /* مؤشر جانبي ملون */
+        .price-bar::before { content:''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: #ccc; }
         
-        .price-mode-std { border-left-color: var(--success); background: #e8f5e9; }
-        .price-mode-med { border-left-color: var(--warning); background: #fffde7; }
-        .price-mode-high { border-left-color: var(--danger); background: #ffebee; }
+        .price-label { font-size: 0.85rem; color: var(--text-sec); font-weight: 700; z-index: 1; }
+        .price-values { display: flex; gap: 15px; font-weight: 800; font-size: 1.1rem; z-index: 1; }
+        .p-val span { font-size: 0.7rem; font-weight: normal; opacity: 0.8; margin-left: 3px; }
+        
+        .price-mode-std::before { background: var(--success); } 
+        .price-mode-std { background: linear-gradient(to right, rgba(0, 184, 148, 0.05), var(--bg-card)); }
+        
+        .price-mode-med::before { background: var(--warning); }
+        .price-mode-med { background: linear-gradient(to right, rgba(255, 111, 0, 0.05), var(--bg-card)); }
+        
+        .price-mode-high::before { background: var(--danger); }
+        .price-mode-high { background: linear-gradient(to right, rgba(255, 82, 82, 0.05), var(--bg-card)); }
 
-        /* --- Steppers --- */
-        .section { background: var(--bg-card); border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
-        .sec-title { font-weight: 700; font-size: 1rem; margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px dashed var(--border-color); color: var(--primary); }
-        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .control-label { flex: 1; font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
-        
-        .stepper { display: flex; align-items: center; gap: 10px; background: var(--bg-body); padding: 5px; border-radius: 12px; border: 1px solid var(--border-color); }
-        .step-btn {
-            width: 45px; height: 45px; border: none; border-radius: 12px;
-            background: #fff; cursor: pointer; font-weight: bold; font-size: 1.4rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: var(--text-main);
+        /* --- Sections & Steppers --- */
+        .section { 
+            background: var(--bg-card); border-radius: 28px; padding: 20px; 
+            margin-bottom: 20px; box-shadow: var(--shadow); border: 1px solid var(--border-color); 
+            backdrop-filter: blur(5px);
         }
-        .step-btn:active { transform: scale(0.9); }
-        .btn-minus { color: var(--danger); } .btn-plus { color: var(--success); }
-        body.dark-mode .step-btn { background: #444; }
+        .sec-title { 
+            font-weight: 800; font-size: 1.1rem; margin-bottom: 20px; padding-bottom: 0; 
+            border-bottom: none; color: var(--text-main); 
+            display: flex; align-items: center;
+        }
+        .sec-title::before { content: ''; width: 6px; height: 6px; background: var(--warning); border-radius: 50%; margin-left: 8px; }
+
+        .control-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .control-label { flex: 1; font-size: 0.95rem; font-weight: 700; color: var(--text-sec); }
         
-        .val-display { font-size: 1.4rem; font-weight: 800; width: 35px; text-align: center; color: var(--primary); }
+        .stepper { 
+            display: flex; align-items: center; gap: 5px; 
+            background: var(--bg-body); padding: 4px; border-radius: 50px; 
+            border: 1px solid var(--border-color); 
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .step-btn {
+            width: 40px; height: 40px; border: none; border-radius: 50%;
+            background: var(--bg-card); cursor: pointer; font-weight: bold; font-size: 1.2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: var(--text-main);
+            transition: 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .step-btn:active { transform: scale(0.9); background: var(--primary-light); }
+        .btn-minus { color: var(--danger); } .btn-plus { color: var(--success); }
+        
+        .val-display { font-size: 1.2rem; font-weight: 800; width: 40px; text-align: center; color: var(--primary); }
         .pop-anim { animation: pop 0.2s ease; color: var(--upgrade); }
         @keyframes pop { 50% { transform: scale(1.4); } }
 
-        .cap-bar-bg { height: 4px; background: var(--border-color); border-radius: 2px; margin-top: 5px; width: 100%; position: relative; overflow: hidden; }
-        .cap-bar-fill { height: 100%; width: 0%; background: var(--success); transition: width 0.3s, background 0.3s; }
+        .cap-bar-bg { height: 6px; background: rgba(0,0,0,0.05); border-radius: 10px; margin-top: 8px; width: 100%; position: relative; overflow: hidden; }
+        .cap-bar-fill { height: 100%; width: 0%; background: var(--success); transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.3s; border-radius: 10px; }
         .lbl-single { color: var(--color-single); } .lbl-suite { color: var(--color-suite); }
 
         /* --- Footer & Sticky --- */
         .sticky-footer {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            border-top: 1px solid var(--border-color);
-            padding: 15px 15px 5px 15px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            background: var(--glass-bg);
+            backdrop-filter: var(--blur-val); -webkit-backdrop-filter: var(--blur-val);
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding: 15px 20px 25px 20px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
             z-index: 999;
-            display: flex; flex-direction: column; gap: 8px;
-            box-sizing: border-box; border-radius: 20px 20px 0 0;
+            display: flex; flex-direction: column; gap: 10px;
+            box-sizing: border-box; border-radius: 30px 30px 0 0;
         }
-        body.dark-mode .sticky-footer { background: rgba(35,35,35,0.98); border-color: #555; }
+        body.dark-mode .sticky-footer { background: rgba(30,30,30,0.9); }
 
         .advice-container { display: flex; gap: 10px; }
         .advice-pill {
-            flex: 1; padding: 10px; border-radius: 12px; text-align: center;
+            flex: 1; padding: 12px; border-radius: 20px; text-align: center;
             font-weight: 800; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 5px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: 0.3s;
         }
-        .pill-green { background: #e0f2f1; color: #00695c; border: 1px solid #80cbc4; }
-        .pill-red { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .pill-green { background: #e0f2f1; color: #00695c; border: 1px solid transparent; }
+        .pill-red { background: #ffebee; color: #c62828; border: 1px solid transparent; }
 
         .actions-row { display: flex; gap: 10px; }
         #submit-btn {
-            flex: 1; padding: 14px; border: none; border-radius: 12px;
-            background: var(--primary);
+            flex: 1; padding: 15px; border: none; border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary), #00acc1);
             color: white; font-weight: 800; font-size: 1.1rem;
-            cursor: pointer; box-shadow: 0 4px 15px rgba(0, 151, 167, 0.3);
+            cursor: pointer; box-shadow: 0 8px 20px rgba(0, 131, 143, 0.2);
             display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: transform 0.2s;
         }
-        #copy-btn { width: 50px; border: none; border-radius: 12px; background: var(--bg-body); color: var(--text-sec); font-size: 1.2rem; cursor: pointer; border: 1px solid var(--border-color); }
+        #submit-btn:active { transform: scale(0.97); }
+        
+        #copy-btn { 
+            width: 55px; border: none; border-radius: 20px; background: var(--bg-card); 
+            color: var(--text-sec); font-size: 1.2rem; cursor: pointer; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
 
         .footer-credits {
-            text-align: center; font-size: 0.75rem; color: #90a4ae;
-            padding-top: 5px; padding-bottom: 5px;
-            border-top: 1px dashed rgba(0,0,0,0.05); margin-top: 5px;
+            text-align: center; font-size: 0.7rem; color: var(--text-sec); opacity: 0.8;
+            padding-top: 5px; margin-top: 0;
         }
-        .footer-credits b { color: var(--text-sec); }
 
         #game-toast {
-            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-            background: #37474f; color: #fff; padding: 8px 15px; border-radius: 20px;
-            font-size: 0.8rem; font-weight: bold; opacity: 0; pointer-events: none;
-            transition: 0.3s; z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            display: flex; align-items: center; gap: 5px;
+            position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
+            background: var(--text-main); color: var(--bg-body); padding: 10px 20px; border-radius: 50px;
+            font-size: 0.85rem; font-weight: bold; opacity: 0; pointer-events: none;
+            transition: 0.3s; z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex; align-items: center; gap: 8px;
         }
-        #game-toast.show { opacity: 1; top: 90px; }
+        #game-toast.show { opacity: 1; top: 100px; }
 
-        .alert-upgrade { background: #ede7f6; color: #5e35b1; padding: 10px; border-radius: 10px; border: 1px solid #d1c4e9; text-align: center; font-size: 0.9rem; margin-bottom: 15px; display: none; }
+        .alert-upgrade { 
+            background: rgba(126, 87, 194, 0.1); color: var(--upgrade); 
+            padding: 12px; border-radius: 20px; border: 1px solid rgba(126, 87, 194, 0.2); 
+            text-align: center; font-size: 0.9rem; margin-bottom: 20px; display: none; 
+            font-weight: bold; animation: pulsePurple 2s infinite;
+        }
+        @keyframes pulsePurple { 0% {box-shadow: 0 0 0 0 rgba(126, 87, 194, 0.2);} 70% {box-shadow: 0 0 0 5px rgba(126, 87, 194, 0);} }
         
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal-content { background: var(--bg-card); padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; text-align: center; }
-        .math-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        /* Modals */
+        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0, 30, 33, 0.5); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(5px); }
+        .modal-content { 
+            background: var(--bg-card); padding: 30px; border-radius: 35px; width: 85%; max-width: 350px; text-align: center; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2);
+        }
+        .math-row { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; font-size: 0.9rem; }
         
-        /* تم إخفاء مؤشر الحفظ */
-        #sync-indicator { display: none !important; }
+        #password-modal input { 
+            width: 100%; padding: 15px; margin: 20px 0; 
+            border: 2px solid transparent; border-radius: 15px; background: var(--bg-body);
+            box-sizing: border-box; text-align: center; font-size: 1rem; font-weight: bold; color: var(--text-main);
+            transition: 0.3s;
+        }
+        #password-modal input:focus { border-color: var(--primary); background: white; outline: none; }
         
-        #password-modal input { width: 100%; padding: 12px; margin: 15px 0; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; text-align: center; }
-
         /* 🔥 CSS للطباعة فقط */
         @media print {
-            .tools-area, .sticky-footer, .season-toggle, #game-toast, #upgrade-alert, #sync-indicator { 
-                display: none !important; 
-            }
-            body { 
-                padding: 0; 
-                background: white; 
-                color: black;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact;
-            }
+            .tools-area, .sticky-footer, .season-toggle, #game-toast, #upgrade-alert, #sync-indicator { display: none !important; }
+            body { padding: 0; background: white; color: black; -webkit-print-color-adjust: exact; print-color-adjust: exact; background-image: none; }
             .container { max-width: 100%; margin: 0; }
-            .card, .section, .price-bar { 
-                box-shadow: none; 
-                border: 1px solid #ccc; 
-                break-inside: avoid; /* منع قص العناصر */
-            }
-            .header-glass { box-shadow: none; border-bottom: 1px solid #000; border-radius: 0; }
-            /* إجبار الخلفيات الفاتحة في الطباعة */
-            .price-mode-std, .price-mode-med, .price-mode-high { -webkit-print-color-adjust: exact; }
+            .card, .section, .price-bar { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; border-radius: 10px; }
+            .header-glass { box-shadow: none; border-bottom: 1px solid #000; border-radius: 0; position: static; background: white; }
         }
 
-        /* 🔥 Desktop Optimization (تعديلات الشاشات الواسعة) */
+        /* 🔥 Desktop Optimization */
         @media (min-width: 768px) {
-            .container { 
-                max-width: 900px; /* توسيع الحاوية المركزية */
-            }
-            .header-glass {
-                padding: 15px 30px; 
-            }
-            .dashboard { 
-                grid-template-columns: 1fr 1fr 1fr 1fr; /* زيادة عدد الأعمدة في لوحة التحكم */
-                gap: 20px; 
-            }
-            .card {
-                padding: 20px 10px;
-            }
-            .section {
-                padding: 20px 30px;
-            }
-            .control-row {
-                margin-bottom: 15px;
-            }
-            .control-label {
-                flex: 1.5;
-                font-size: 1rem;
-            }
-            .stepper {
-                padding: 3px; 
-            }
-            .step-btn {
-                width: 35px; /* تصغير حجم الأزرار */
-                height: 35px;
-                font-size: 1.2rem;
-            }
-            .val-display {
-                font-size: 1.2rem;
-                width: 45px;
-            }
-            .price-bar {
-                padding: 15px 25px; /* زيادة التوسيع الداخلي */
-            }
-            .sticky-footer {
-                left: auto;
-                right: auto;
-                width: 100%;
-                max-width: 900px;
-                margin: 0 auto;
-            }
+            .container { max-width: 900px; }
+            .header-glass { padding: 15px 30px; }
+            .dashboard { grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
+            .card { padding: 25px 15px; }
+            .section { padding: 25px 30px; }
+            .step-btn { width: 35px; height: 35px; }
+            .val-display { font-size: 1.1rem; width: 45px; }
+            .sticky-footer { left: auto; right: auto; width: 100%; max-width: 900px; margin: 0 auto; border-radius: 30px 30px 0 0; }
         }
-
-</style>
+    </style>
 </head>
 <body>
 
     <div class="container">
         <div class="header-glass">
            <div class="header-title" style="display:flex;align-items:center;gap:10px;">
-    <img src="adora-logo.png" 
-         alt="ADORA Logo" style="height:90px; width:auto;">
-</div>
+                <img src="adora-logo.png" alt="ADORA Logo" style="height:90px; width:auto;">
+           </div>
 
             <div class="tools-area">
-                <button class="tools-btn" onclick="showResetModal()">🔄</button>
-                <button class="tools-btn" onclick="toggleDarkMode()">🌙</button>
+                <button class="tools-btn" onclick="showResetModal()" title="تصفير">🔄</button>
+                <button class="tools-btn" onclick="toggleDarkMode()" title="الوضع الليلي">🌙</button>
                 <div class="season-toggle" id="season-btn" onclick="toggleSeason()">
                     <div class="season-dot"></div> موسم
                 </div>
             </div>
         </div>
         
-        <div id="game-toast">🚀 مبيعات الوردية: <span id="sales-count">0</span></div>
-        <div id="sync-indicator">🔄 جاري الحفظ...</div>
+        <div id="game-toast">🚀 مبيعات الشفت: <span id="sales-count">0</span></div>
+        <div id="sync-indicator" style="display: none; text-align: center; color: var(--text-sec); font-size: 0.8rem; margin-bottom: 10px;">🔄 جاري الحفظ...</div>
 
         <div class="dashboard">
             <div class="card c-single" id="card-single" onclick="showExplain('single')">
@@ -373,7 +379,7 @@
             </div>
             <div class="cap-bar-bg"><div class="cap-bar-fill" id="bar-stayS"></div></div>
             
-            <hr style="border:0; border-top:1px dashed #eee; margin:15px 0;">
+            <hr style="border:0; border-top:1px dashed var(--border-color); margin:15px 0;">
 
             <div class="control-row">
                 <div class="control-label lbl-suite"><span>🛋️</span> مجدد (وصالة)</div>
@@ -424,7 +430,7 @@
                     <button class="step-btn btn-plus" onclick="changeVal('recS', 1, 100, true)">+</button>
                 </div>
             </div>
-            <hr style="border:0; border-top:1px dashed #eee; margin:15px 0;">
+            <hr style="border:0; border-top:1px dashed var(--border-color); margin:15px 0;">
             <div class="control-row">
                 <div class="control-label">بوكينج (وصالة)</div>
                 <div class="stepper" onmousedown="zenStart()" onmouseup="zenEnd()" ontouchstart="zenStart()" ontouchend="zenEnd()">
@@ -465,17 +471,17 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <h3 style="color:var(--primary); margin-top:0;">تفاصيل الحساب</h3>
             <div id="math-content"></div>
-            <button onclick="closeExplain()" style="margin-top:15px; width:100%; padding:10px; border:none; background:#eee; border-radius:10px;">إغلاق</button>
+            <button onclick="closeExplain()" style="margin-top:20px; width:100%; padding:15px; border:none; background:var(--bg-body); border-radius:15px; color:var(--text-main); font-weight:bold; cursor:pointer;">إغلاق</button>
         </div>
     </div>
     
     <div id="password-modal" class="modal-overlay">
         <div class="modal-content">
             <h3 style="color:var(--danger); margin-top:0;">🔒 تصفير العدادات</h3>
-            <p>أدخل كلمة مرور المسؤول للمتابعة</p>
+            <p style="color:var(--text-sec); font-size:0.9rem;">أدخل كلمة مرور المسؤول للمتابعة</p>
             <input type="password" id="admin-password" placeholder="كلمة المرور" />
-            <button onclick="checkPasswordAndReset()" style="width:100%; padding:12px; border:none; border-radius:10px; background:var(--danger); color:white; font-weight:bold; margin-bottom:10px;">تأكيد التصفير</button>
-            <button onclick="document.getElementById('password-modal').style.display='none'" style="width:100%; padding:10px; border:none; background:#eee; border-radius:10px;">إلغاء</button>
+            <button onclick="checkPasswordAndReset()" style="width:100%; padding:15px; border:none; border-radius:15px; background:var(--danger); color:white; font-weight:bold; margin-bottom:10px; cursor:pointer;">تأكيد التصفير</button>
+            <button onclick="document.getElementById('password-modal').style.display='none'" style="width:100%; padding:12px; border:none; background:var(--bg-body); color:var(--text-main); border-radius:15px; font-weight:bold; cursor:pointer;">إلغاء</button>
         </div>
     </div>
 
@@ -542,7 +548,7 @@
             // Gamification (Local)
             if(isSale && amount > 0) {
                 sessionSales++;
-                showToast(`🚀 مبيعات الوردية: ${sessionSales}`);
+                showToast(`🚀 مبيعات الشفت: ${sessionSales}`);
             }
 
             saveData(); updateUI();
