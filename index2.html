@@ -43,7 +43,7 @@
             --primary: #0097a7; --primary-glass: rgba(0, 151, 167, 0.15);
             --success: #10b981; --success-glass: rgba(16, 185, 129, 0.2);
             --danger: #ef4444; --danger-glass: rgba(239, 68, 68, 0.15);
-            --warning: #f59e0b; 
+            --warning: #f59e0b; --warning-glass: rgba(245, 158, 11, 0.15); /* NEW: Added warning-glass */
             --upgrade: #8b5cf6; 
             --request-color: #6366f1; --request-glass: rgba(99, 102, 241, 0.15);
             --sched-color: #3b82f6; --sched-glass: rgba(59, 130, 246, 0.1);
@@ -68,9 +68,30 @@
         .tools-btn.turbo-active { color: var(--success); background: var(--primary-glass); animation: pulseGreen 1.5s infinite; border-radius: 50% !important; width: 38px; height: 38px; padding: 0; display: flex; justify-content: center; align-items: center; }
 
         /* General Layout */
-        .section { border-radius: 28px; box-shadow: var(--shadow); border: 1px solid var(--border-color); background: var(--bg-card); padding: 20px; margin-bottom: 20px; }
+        .section { border-radius: 28px; box-shadow: var(--shadow); border: 1px solid var(--border-color); background: var(--bg-card); padding: 20px; margin-bottom: 20px; transition: 0.3s; } /* Added transition */
         .sec-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px; position: relative; z-index: 20; }
         .sec-title span { font-weight: 800; font-size: 1.2rem; display: flex; align-items: center; gap: 8px; letter-spacing: -0.5px; }
+        
+        /* ================= NEW SECTION COLORS (Smart Glass & Border) ================= */
+
+        /* تخصيص الخلفيات الزجاجية الخفيفة للأقسام */
+        .section-rooms {
+            /* النظافة: أخضر خفيف (Soft Green) */
+            background: linear-gradient(to bottom right, var(--bg-card), var(--success-glass) 5%);
+            border-left: 5px solid var(--success);
+        }
+
+        .section-requests {
+            /* الطلبات: أزرق خفيف (Soft Blue/Indigo) */
+            background: linear-gradient(to bottom right, var(--bg-card), var(--request-glass) 5%);
+            border-left: 5px solid var(--request-color);
+        }
+
+        .section-maintenance {
+            /* الصيانة: برتقالي خفيف (Soft Orange/Yellow) */
+            background: linear-gradient(to bottom right, var(--bg-card), var(--warning-glass) 5%);
+            border-left: 5px solid var(--warning);
+        }
 
         /* 2. Rotating Plus Button */
         .btn-add-room-wrapper { position: relative; display: inline-block; width: 55px; height: 55px; z-index: 100; }
@@ -309,7 +330,7 @@
                 </div>
             </div>
 
-            <div class="section">
+            <div class="section section-rooms">
                 <div class="sec-title">
                     <span>🚪 تتبع الغرف</span>
                     <div class="btn-add-room-wrapper"><button onclick="openAddModal()" class="btn-add-room" id="add-room-btn">+</button></div>
@@ -321,7 +342,7 @@
                 </div>
             </div>
 
-            <div class="section" id="guest-requests-section">
+            <div class="section section-requests" id="guest-requests-section">
                 <div class="sec-title" style="color: var(--request-color);"><span>🛎️ طلبات النزلاء</span><button onclick="toggleArchive('req')" class="tools-btn" title="الأرشيف">📂</button></div>
                 <div id="guest-requests-active-list" style="margin-bottom:5px;"></div>
                  <div id="scheduled-requests-container" style="margin-top: 20px; border-top: 2px dashed var(--border-color); padding-top: 15px; display: none;">
@@ -334,7 +355,7 @@
                 </div>
             </div>
 
-            <div class="section">
+            <div class="section section-maintenance">
                 <div class="sec-title" style="color: var(--maint-color);"><span>🛠️ الصيانة</span><button onclick="toggleArchive('maint')" class="tools-btn" title="الأرشيف">📂</button></div>
                 <div id="maintenance-active-list" style="margin-bottom:5px;"></div>
                  <div id="scheduled-maintenance-container" style="margin-top: 20px; border-top: 2px dashed var(--border-color); padding-top: 15px; display: none;">
