@@ -11,7 +11,7 @@
 
     <style>
         /* ============================================================
-           CSS (V20.1: Fixed Logs & Persistence)
+           CSS (V23.0: Custom Alerts + Compact Request Modal)
            ============================================================ */
         :root { --bg-body: #f4f6f8; --bg-card: #ffffff; --text-main: #2c3e50; --text-sec: #7f8c8d; --border-color: #e0e0e0; --primary: #0097a7; --primary-light: #e0f7fa; --success: #00b894; --danger: #d63031; --warning: #f1c40f; --upgrade: #7e57c2; --request-color: #673AB7; --request-light: #EDE7F6; --maint-card-bg: #f3e5f5; --maint-card-border: #9c27b0; --shadow: 0 4px 15px rgba(0,0,0,0.05); --circle-width: 7px; }
         body.dark-mode { --bg-body: #0f172a; --bg-card: #1e293b; --text-main: #f1f5f9; --text-sec: #94a3b8; --border-color: #334155; --primary: #38bdf8; --primary-light: rgba(56, 189, 248, 0.1); --request-color: #A78BFA; --request-light: rgba(139, 92, 246, 0.1); --maint-card-bg: #4a148c; --maint-card-border: #ea80fc; --shadow: 0 4px 20px rgba(0,0,0,0.4); }
@@ -122,9 +122,16 @@
         .radio-btn-box.selected { background: var(--primary); color: white; box-shadow: 0 4px 8px rgba(0, 151, 167, 0.3); transform: translateY(-1px); }
         .radio-btn-box.selected-maint { background: var(--danger); color: white; box-shadow: 0 4px 8px rgba(214, 48, 49, 0.3); transform: translateY(-1px); }
         
-        /* New Archive Styles */
+        /* Archive & Pagination */
         .archive-container { display: none; background: rgba(0,0,0,0.02); padding: 10px; border-radius: 10px; margin-top: 10px; border: 1px dashed var(--border-color); }
-        .btn-toggle-archive { font-size: 0.7rem; color: var(--text-sec); width: 100%; border: 1px dashed var(--border-color); border-radius: 12px; padding: 5px; margin-top: 10px; cursor: pointer; background: transparent; }
+        .btn-show-more { width: 100%; border: none; background: transparent; color: var(--primary); font-weight: bold; padding: 8px; cursor: pointer; font-size: 0.8rem; margin-top: 5px; }
+        .btn-show-more:active { transform: scale(0.95); }
+
+        /* 🔥 New Custom Alert Styles 🔥 */
+        .alert-modal-content { background: var(--bg-card); padding: 20px; border-radius: 20px; width: 85%; max-width: 280px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.3); border: 1px solid var(--border-color); animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .alert-icon { font-size: 3.5rem; margin-bottom: 15px; display: block; line-height: 1; }
+        .alert-msg { font-size: 1rem; color: var(--text-main); margin-bottom: 25px; font-weight: 500; line-height: 1.5; white-space: pre-wrap; }
+        @keyframes popIn { from {transform: scale(0.8); opacity: 0;} to {transform: scale(1); opacity: 1;} }
 
         #dev-footer-fixed { position: fixed; bottom: 0; left: 0; width: 100%; text-align: center; font-size: 0.7rem; color: var(--text-sec); background: var(--bg-card); padding: 5px 0; border-top: 1px solid var(--border-color); z-index: 1000; }
         @media (min-width: 768px) { .container { max-width: 700px; margin: 0 auto; } .header-glass { max-width: 700px; } .stats-grid { grid-template-columns: 1fr 1fr 1fr; gap: 20px; } .room-row { grid-template-columns: 50px 1fr 1fr auto; padding: 15px; } }
@@ -145,7 +152,9 @@
         <div class="worker-view">
             <div id="sync-indicator" style="display: none;">🔄 جاري الحفظ...</div>
             <div class="section" style="padding:15px;">
-                <div class="sec-title"><span>📈 إحصائيات الأداء</span><button onclick="showResetModal()" class="tools-btn" style="padding: 2px 6px;">🗑️</button></div>
+                <div class="sec-title"><span>📈 إحصائيات الأداء</span>
+                    <button onclick="showNewShiftModal()" class="tools-btn" style="padding: 2px 6px; font-size:1.2rem;" title="بدء شفت جديد">🌅</button>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-circle-box"><div class="circle-viz" style="border-color: var(--danger);"><h3 id="stat-late">0</h3><span>متأخر</span></div></div>
                     <div class="stat-circle-box"><div class="circle-viz" style="border-color: var(--primary);"><h3 id="stat-active">0</h3><span>نشط</span></div></div>
@@ -166,20 +175,21 @@
                 </div>
             </div>
 
+            <div class="section">
+                <div class="sec-title"><span>🚪 تتبع الغرف</span><button onclick="openAddModal()" class="btn-add-room" id="add-room-btn">+</button></div>
+                <div id="progressSection" style="margin-bottom:10px; display:none;"></div>
+                <input type="text" id="search-bar" class="search-box" placeholder="🔍 بحث برقم الغرفة..." oninput="updateSearch()">
+                <div id="rooms-container"></div>
+            </div>
+
             <div class="section" id="guest-requests-section">
                 <div class="sec-title" style="color: var(--request-color);"><span>🛎️ طلبات النزلاء</span><button onclick="toggleArchive('req')" class="tools-btn" title="الأرشيف">📂</button></div>
                 <div id="guest-requests-active-list" style="margin-bottom:5px;"></div>
                 <div id="req-archive-container" class="archive-container">
                     <div style="font-size:0.7rem; color:var(--text-sec); margin-bottom:5px; font-weight:bold;">أرشيف الطلبات المكتملة:</div>
                     <div id="guest-requests-archive-list"></div>
+                    <button id="btn-more-req" class="btn-show-more" onclick="loadMoreArchives('req')">⬇️ عرض المزيد (5)</button>
                 </div>
-            </div>
-
-            <div class="section">
-                <div class="sec-title"><span>🚪 تتبع الغرف</span><button onclick="openAddModal()" class="btn-add-room" id="add-room-btn">+</button></div>
-                <div id="progressSection" style="margin-bottom:10px; display:none;"></div>
-                <input type="text" id="search-bar" class="search-box" placeholder="🔍 بحث برقم الغرفة..." oninput="updateSearch()">
-                <div id="rooms-container"></div>
             </div>
 
             <div class="section">
@@ -188,6 +198,7 @@
                 <div id="maint-archive-container" class="archive-container">
                     <div style="font-size:0.7rem; color:var(--text-sec); margin-bottom:5px; font-weight:bold;">أرشيف الصيانة المكتملة:</div>
                     <div id="maintenance-archive-list"></div>
+                    <button id="btn-more-maint" class="btn-show-more" onclick="loadMoreArchives('maint')">⬇️ عرض المزيد (5)</button>
                 </div>
             </div>
 
@@ -212,22 +223,43 @@
                 <input type="number" id="inpRoomNum" placeholder="رقم الغرفة" oninput="checkDuplicate(); checkRequestWarnings();">
                 <div id="room-dup-alert" style="font-size:0.75rem; font-weight:bold; margin-top:8px; padding:5px; border-radius:5px; text-align:right; display:none; white-space: pre-wrap; line-height: 1.4;"></div>
             </div>
-            <div id="cleaning-options"><div style="margin-bottom:15px;"><label class="modal-label">حالة الغرفة</label><input type="hidden" id="inpRoomType"><div class="custom-options-container"><div onclick="setRoomType('out')" class="option-btn" id="opt_out">خروج (تنظيف فوري)</div><div onclick="setRoomType('stay')" class="option-btn" id="opt_stay">ساكن</div></div></div></div>
-            <div id="request-options" style="display:none; margin-bottom:15px;"><label class="modal-label" style="color:var(--request-color);">تفاصيل الطلب</label><textarea id="inpRequestDetails" rows="3" placeholder="اكتب طلب النزيل هنا..."></textarea></div>
             
-            <div class="toggle-container" style="background: rgba(255, 152, 0, 0.1); border-color: rgba(255, 152, 0, 0.3); margin-bottom: 10px;">
-                <div class="toggle-label" style="color: #ef6c00;" id="turbo-label">🚀 سوبر تيربو (خصم 5د)</div>
-                <label class="switch"><input type="checkbox" id="inpSuperTurbo" onchange="toggleTurboInput()"><span class="slider"></span></label>
+            <div id="cleaning-options">
+                <div style="margin-bottom:15px;">
+                    <label class="modal-label">حالة الغرفة</label>
+                    <input type="hidden" id="inpRoomType">
+                    <div class="custom-options-container">
+                        <div onclick="setRoomType('out')" class="option-btn" id="opt_out">خروج (تنظيف فوري)</div>
+                        <div onclick="setRoomType('stay')" class="option-btn" id="opt_stay">ساكن</div>
+                    </div>
+                </div>
+                <div class="toggle-container" style="background: rgba(255, 152, 0, 0.1); border-color: rgba(255, 152, 0, 0.3); margin-bottom: 10px;">
+                    <div class="toggle-label" style="color: #ef6c00;" id="turbo-label">🚀 سوبر تيربو (خصم 5د)</div>
+                    <label class="switch"><input type="checkbox" id="inpSuperTurbo"><span class="slider"></span></label>
+                </div>
             </div>
 
-            <div id="stayOptions" style="display:none; background:rgba(0,0,0,0.02); padding:10px; border-radius:10px; margin-bottom:15px; text-align:right;">
-                <label class="modal-label">وضع النزيل</label><input type="hidden" id="inpGuestStatus" value="in"><div class="radio-options-grid"><div onclick="setGuestStatus('in')" class="radio-btn-box selected" id="gst_in">بالداخل</div><div onclick="setGuestStatus('out')" class="radio-btn-box" id="gst_out">بالخارج</div></div>
-                <label class="modal-label" id="lblTime" style="margin-top:10px;">وقت التنفيذ/العودة</label>
-                <div class="time-input-container"><div onclick="changeTimeValue('hour', 1)" id="hourBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpHour">12</span><span class="time-arrow down">▼</span></div><div onclick="changeTimeValue('minute', 5)" id="minuteBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpMinute">00</span><span class="time-arrow down">▼</span></div><div onclick="togglePeriod()" id="periodBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpPeriodText">مساءً</span><span class="time-arrow down">▼</span></div></div>
-                <input type="hidden" id="inpHourValue" value="12"><input type="hidden" id="inpMinuteValue" value="0"><input type="hidden" id="inpPeriodValue" value="PM">
+            <div id="request-options" style="display:none; margin-bottom:15px;">
+                <div style="display:flex; gap:10px; margin-bottom:15px;">
+                    <button onclick="setRequestMode('immediate')" id="btn-req-imm" class="modal-tab-btn active-req" style="flex:1; font-size:1rem; padding:12px;">🔥 طلب فوري</button>
+                    <button onclick="setRequestMode('scheduled')" id="btn-req-sch" class="modal-tab-btn" style="flex:1; border:1px solid var(--border-color); color:var(--text-sec); font-size:1rem; padding:12px;">📅 طلب مجدول</button>
+                </div>
+
+                <label class="modal-label" style="color:var(--request-color);">تفاصيل الطلب</label>
+                <textarea id="inpRequestDetails" rows="3" placeholder="اكتب طلب النزيل هنا..."></textarea>
+
+                <div id="request-schedule-container" style="display:none;">
+                    <div id="stayOptions" style="display:block; background:rgba(0,0,0,0.02); padding:10px; border-radius:10px; margin-bottom:15px; text-align:right; margin-top:15px;">
+                        <label class="modal-label">وضع النزيل</label><input type="hidden" id="inpGuestStatus" value="in"><div class="radio-options-grid"><div onclick="setGuestStatus('in')" class="radio-btn-box selected" id="gst_in">بالداخل</div><div onclick="setGuestStatus('out')" class="radio-btn-box" id="gst_out">بالخارج</div></div>
+                        <label class="modal-label" id="lblTime" style="margin-top:10px;">وقت التنفيذ/العودة</label>
+                        <div class="time-input-container"><div onclick="changeTimeValue('hour', 1)" id="hourBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpHour">12</span><span class="time-arrow down">▼</span></div><div onclick="changeTimeValue('minute', 5)" id="minuteBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpMinute">00</span><span class="time-arrow down">▼</span></div><div onclick="togglePeriod()" id="periodBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpPeriodText">مساءً</span><span class="time-arrow down">▼</span></div></div>
+                        <input type="hidden" id="inpHourValue" value="12"><input type="hidden" id="inpMinuteValue" value="0"><input type="hidden" id="inpPeriodValue" value="PM">
+                    </div>
+                </div>
             </div>
             
-            <button onclick="addNewRoom()" class="full-btn" style="background:var(--success); margin-bottom:10px;" id="confirm-add-room">إضافة (وإرسال واتساب)</button><button onclick="closeAllModals()" class="full-btn" style="background:#ddd; color:#333;" id="cancel-add-room">إلغاء</button>
+            <button onclick="addNewRoom()" class="full-btn" style="background:var(--success); margin-bottom:10px; font-size:1.1rem; padding:12px;" id="confirm-add-room">إضافة (وإرسال واتساب)</button>
+            <button onclick="closeAllModals()" class="full-btn" style="background:#ddd; color:#333;" id="cancel-add-room">إلغاء</button>
         </div>
     </div>
 
@@ -270,8 +302,16 @@
     </div>
     
     <div id="complete-maint-modal" class="modal-overlay"><div class="modal-content"><h3 style="margin-top:0; color:var(--success);">✅ إنهاء عمل الصيانة</h3><div id="maint-room-num-display" style="font-size:1.2rem; font-weight:bold; margin-bottom:15px; color:var(--text-main);">غرفة XXX</div><label class="modal-label">صورة إنهاء العمل (إجبارية):</label><div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;"><label id="maint-camera-label" for="maint-img-camera-input" class="full-btn" style="background:var(--primary);">📸 افتح الكاميرا</label><input type="file" accept="image/*" capture="environment" id="maint-img-camera-input" style="display:none;"></div><button onclick="confirmCompleteMaintenance()" class="full-btn" id="btn_confirm_maint_finish" style="background:var(--success); margin-top:10px;">توثيق الإنهاء وإرسال 🚀</button><button onclick="closeAllModals()" class="full-btn" style="background:#ddd; color:#333;" id="cancel-complete-maint">إلغاء</button></div></div>
-    <div id="password-modal" class="modal-overlay"><div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger); margin-top:0;">تحقق أمني</h3><p>أدخل كلمة المرور للمتابعة</p><input type="password" id="admin-password" placeholder="كلمة المرور" style="width:100%; margin-bottom:15px;" /><button onclick="checkPasswordAndAction()" id="confirm-reset-btn" class="full-btn" style="background:var(--success); margin-bottom:10px;">تأكيد</button><button onclick="closeAllModals()" class="full-btn" style="background:#ddd; color:#333;" id="cancel-password">إلغاء</button></div></div>
+    <div id="password-modal" class="modal-overlay"><div class="modal-content" style="text-align:center;"><h3 style="color:var(--danger); margin-top:0;">تحقق أمني</h3><p id="password-modal-msg">أدخل كلمة المرور للمتابعة</p><input type="password" id="admin-password" placeholder="كلمة المرور" style="width:100%; margin-bottom:15px;" /><button onclick="checkPasswordAndAction()" id="confirm-reset-btn" class="full-btn" style="background:var(--success); margin-bottom:10px;">تأكيد</button><button onclick="closeAllModals()" class="full-btn" style="background:#ddd; color:#333;" id="cancel-password">إلغاء</button></div></div>
     <div id="action-confirm-modal" class="modal-overlay"><div class="modal-content" style="text-align:center;"><h3 id="confirm-title" style="color:var(--danger); margin-top:0;">تأكيد</h3><p id="confirm-message" style="font-size:0.9rem;">هل أنت متأكد؟</p><button id="confirm-yes-btn" class="full-btn" style="background:var(--success); margin-bottom:10px;">نعم، أؤكد</button><button onclick="closeAllModals()" class="full-btn" style="background:#ddd; color:#333;" id="cancel-confirm">إلغاء</button></div></div>
+
+    <div id="customAlertModal" class="modal-overlay" style="z-index: 3000;">
+        <div class="alert-modal-content">
+            <span id="alertIcon" class="alert-icon"></span>
+            <p id="alertMessage" class="alert-msg"></p>
+            <button onclick="closeCustomAlert()" class="full-btn" style="background:var(--primary); font-size:1rem; padding:10px 20px;">حسناً</button>
+        </div>
+    </div>
 
     <script>
         // 🔥 1. GLOBAL SETTINGS
@@ -282,23 +322,33 @@
             times: { OUT_NORM: 35 * 60000, OUT_TURBO: 30 * 60000, STAY_NORM: 25 * 60000, STAY_TURBO: 20 * 60000, TRAVEL: 15 * 60000, PREP_ALERT: 15 * 60000, CHECKING: 15 * 60000 } 
         };
         
-        let appState = { rooms: [], log: [], activeMaintenance: [], completedMaintenanceLog: [], guestRequests: [], guestRequestsLog: [], turbo: false, searchText: "" };
+        let appState = { rooms: [], log: [], activeMaintenance: [], completedMaintenanceLog: [], guestRequests: [], guestRequestsLog: [], turbo: false, searchText: "", archiveViewLimit: { req: 5, maint: 5 } };
         let currentAddMode = 'cleaning';
+        let isImmediateRequest = true; // State for new request modal mode
         let db, dbRef;
         let tempRoomId = null, activeRoomId = null, activeMaintId = null, pendingAction = null;
 
         // 🔥 2. INITIALIZATION & HELPER FUNCTIONS
         function initApp() {
-            // Restore from LocalStorage immediately on load
             const saved = localStorage.getItem('abella_hybrid_v6');
             if (saved) {
                 try {
                     appState = JSON.parse(saved);
+                    if(!appState.archiveViewLimit) appState.archiveViewLimit = { req: 5, maint: 5 };
                 } catch(e) { console.error("Error loading data", e); }
             }
             render();
+            // Start the separate timer loop
+            setInterval(() => {
+                updateTimersDOM();
+                renderUndoCountdowns();
+            }, 1000);
         }
         window.onload = initApp;
+
+        function getFormattedDate() {
+            return new Date().toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'short' });
+        }
 
         function initTimeFields() {
             const now = new Date();
@@ -338,7 +388,7 @@
 
         function checkDuplicate() {
             const num = document.getElementById('inpRoomNum').value;
-            const exists = appState.rooms.find(r => r.num == num);
+            const exists = appState.rooms.find(r => r.num == String(num));
             const alertBox = document.getElementById('room-dup-alert');
             if (exists) {
                 alertBox.style.display = 'block'; alertBox.style.background = 'rgba(214, 48, 49, 0.1)'; alertBox.style.color = '#d63031';
@@ -350,7 +400,14 @@
         function toggleArchive(type) {
             const id = type === 'req' ? 'req-archive-container' : 'maint-archive-container';
             const el = document.getElementById(id);
+            appState.archiveViewLimit[type] = 5;
             el.style.display = el.style.display === 'block' ? 'none' : 'block';
+            render();
+        }
+
+        function loadMoreArchives(type) {
+            appState.archiveViewLimit[type] += 5;
+            render();
         }
 
         // 🔥 3. MAIN FUNCTIONS
@@ -360,12 +417,13 @@
             document.getElementById('inpRoomType').value = ''; 
             document.getElementById('opt_out').classList.remove('selected'); 
             document.getElementById('opt_stay').classList.remove('selected'); 
-            document.getElementById('stayOptions').style.display = 'none'; 
             document.getElementById('inpSuperTurbo').checked = false; 
             document.getElementById('inpRequestDetails').value = ''; 
             
             initTimeFields(); 
             switchAddMode('cleaning'); 
+            // Reset Request Mode to Immediate by default
+            setRequestMode('immediate');
             document.getElementById('addRoomModal').style.display = 'flex'; 
         }
 
@@ -374,13 +432,10 @@
             document.getElementById('tab-cleaning').classList.remove('active', 'active-req'); 
             document.getElementById('tab-request').classList.remove('active', 'active-req'); 
             
-            const isUrgent = document.getElementById('inpSuperTurbo').checked;
-            
             if (mode === 'cleaning') { 
                 document.getElementById('tab-cleaning').classList.add('active'); 
                 document.getElementById('cleaning-options').style.display = 'block'; 
                 document.getElementById('request-options').style.display = 'none'; 
-                document.getElementById('stayOptions').style.display = 'none'; 
                 document.getElementById('modal-title-add').innerText = 'إضافة غرفة جديدة'; 
                 document.getElementById('modal-title-add').style.color = 'var(--primary)'; 
                 document.getElementById('turbo-label').innerText = '🚀 سوبر تيربو (خصم 5د)'; 
@@ -388,12 +443,28 @@
                 document.getElementById('tab-request').classList.add('active-req'); 
                 document.getElementById('cleaning-options').style.display = 'none'; 
                 document.getElementById('request-options').style.display = 'block'; 
-                document.getElementById('stayOptions').style.display = isUrgent ? 'none' : 'block'; 
-                document.getElementById('lblTime').innerText = 'وقت تنفيذ الطلب'; 
                 document.getElementById('modal-title-add').innerText = '🛎️ طلب نزيل جديد'; 
                 document.getElementById('modal-title-add').style.color = 'var(--request-color)'; 
-                document.getElementById('turbo-label').innerText = '🔥 طلب عاجل جداً'; 
+                // Turbo toggle not needed for requests anymore in UI
             } 
+        }
+
+        // New function to handle immediate/scheduled request toggling
+        function setRequestMode(mode) {
+            isImmediateRequest = (mode === 'immediate');
+            const immBtn = document.getElementById('btn-req-imm');
+            const schBtn = document.getElementById('btn-req-sch');
+            const container = document.getElementById('request-schedule-container');
+
+            if (isImmediateRequest) {
+                immBtn.classList.add('active-req'); immBtn.style.border = 'none'; immBtn.style.color = 'white';
+                schBtn.classList.remove('active-req'); schBtn.style.border = '1px solid var(--border-color)'; schBtn.style.color = 'var(--text-sec)';
+                container.style.display = 'none';
+            } else {
+                schBtn.classList.add('active-req'); schBtn.style.border = 'none'; schBtn.style.color = 'white';
+                immBtn.classList.remove('active-req'); immBtn.style.border = '1px solid var(--border-color)'; immBtn.style.color = 'var(--text-sec)';
+                container.style.display = 'block';
+            }
         }
 
         function setRoomType(type) { 
@@ -426,15 +497,17 @@
         }
 
         function addNewRoom() {
-            const num = document.getElementById('inpRoomNum').value; 
-            if (!num) { showAlert('يرجى إدخال رقم الغرفة.', 'warning'); return; }
+            let num = document.getElementById('inpRoomNum').value; 
+            if (!num) { showCustomAlert('يرجى إدخال رقم الغرفة.', 'warning'); return; }
+            num = String(num); 
 
             // إضافة طلب
             if (currentAddMode === 'request') {
                 const details = document.getElementById('inpRequestDetails').value; 
-                if (!details) { showAlert('يرجى كتابة تفاصيل الطلب.', 'warning'); return; }
+                if (!details) { showCustomAlert('يرجى كتابة تفاصيل الطلب.', 'warning'); return; }
                 
-                const isUrgent = document.getElementById('inpSuperTurbo').checked;
+                // Use the new isImmediateRequest state instead of the old toggle
+                const isUrgent = isImmediateRequest;
                 let displayTime = "فوري";
                 if (!isUrgent) {
                     const hVal = document.getElementById('inpHourValue').value; 
@@ -451,10 +524,9 @@
                 saveData(); 
                 closeAllModals();
                 
-                let waMsg = `*🛎️ طلب نزيل جديد*\nغرفة: ${num}\nالطلب: ${details}\nالتوقيت: ${displayTime}`; 
+                let waMsg = `Adora | 🛎️ *طلب نزيل جديد*\nغرفة: ${num}\nالطلب: ${details}\nالتوقيت: ${displayTime}`; 
                 if (isUrgent) waMsg += `\n🔥 الحالة: عاجل جداً`; 
                 
-                // USE HREF INSTEAD OF OPEN TO FIX MOBILE BLOCKING
                 window.location.href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
                 return;
             }
@@ -462,16 +534,16 @@
             // إضافة غرفة تنظيف
             const type = document.getElementById('inpRoomType').value; 
             const isSuper = document.getElementById('inpSuperTurbo').checked; 
-            if (!type) { showAlert('اختر حالة الغرفة (خروج/ساكن).', 'warning'); return; }
+            if (!type) { showCustomAlert('اختر حالة الغرفة (خروج/ساكن).', 'warning'); return; }
             
-            const activeRoom = appState.rooms.find(room => room.num == num); 
-            const activeMaintRoom = appState.activeMaintenance.find(room => room.num == num);
-            if (activeRoom || activeMaintRoom) { showAlert(`الغرفة رقم ${num} نشطة حالياً أو قيد الصيانة.`, 'error'); return; }
+            const activeRoom = appState.rooms.find(room => room.num === num); 
+            const activeMaintRoom = appState.activeMaintenance.find(room => room.num === num);
+            if (activeRoom || activeMaintRoom) { showCustomAlert(`الغرفة رقم ${num} نشطة حالياً أو قيد الصيانة.`, 'error'); return; }
             
             const newRoom = { id: Date.now(), num, type, status: 'acknowledging', startTime: Date.now(), deadline: Date.now() + CONFIG.times.TRAVEL, guestStatus: 'out', undoExpiry: Date.now() + 15000, historyLogs: [{ action: 'دخول', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) }], isSuperTurbo: isSuper, isNew: true };
             
             let waMsg = ""; 
-            if (type === 'out') { waMsg = `*إضافة غرفة خروج*\nرقم الغرفة: ${num}\nنظافة عاجلة!`; } 
+            if (type === 'out') { waMsg = `Adora | *إضافة غرفة خروج*\nرقم الغرفة: ${num}\nنظافة عاجلة!`; } 
             else { 
                 const gStat = document.getElementById('inpGuestStatus').value; 
                 const hVal = document.getElementById('inpHourValue').value; 
@@ -479,8 +551,8 @@
                 const period = document.getElementById('inpPeriodValue').value; 
                 const displayTime = `${hVal.padStart(2, '0')}:${mVal.padStart(2, '0')} ${period === 'AM' ? 'صباحاً' : 'مساءً'}`; 
                 newRoom.schedTime = displayTime; 
-                if (gStat === 'in') waMsg = `*إضافة ساكن (بالداخل)*\nرقم الغرفة: ${num}\nيطلب نظافة الساعة: ${displayTime}`; 
-                else waMsg = `*إضافة ساكن (بالخارج)*\nرقم الغرفة: ${num}\nيعود الساعة: ${displayTime}`; 
+                if (gStat === 'in') waMsg = `Adora | *إضافة ساكن (بالداخل)*\nرقم الغرفة: ${num}\nيطلب نظافة الساعة: ${displayTime}`; 
+                else waMsg = `Adora | *إضافة ساكن (بالخارج)*\nرقم الغرفة: ${num}\nيعود الساعة: ${displayTime}`; 
                 
                 let h = parseInt(hVal); const m = parseInt(mVal); if (period === 'PM' && h !== 12) h += 12; if (period === 'AM' && h === 12) h = 0; 
                 const targetDate = new Date(); targetDate.setHours(h, m, 0, 0); 
@@ -494,7 +566,6 @@
             saveData(); 
             closeAllModals(); 
             
-            // USE HREF INSTEAD OF OPEN
             window.location.href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
             
             setTimeout(() => { 
@@ -503,15 +574,22 @@
             }, 5000);
         }
 
-        function saveData() { 
-            localStorage.setItem('abella_hybrid_v6', JSON.stringify(appState));
-            if (dbRef) { 
-                document.getElementById('sync-indicator').style.display = 'block'; 
-                dbRef.set(appState).then(() => { 
-                    setTimeout(() => { document.getElementById('sync-indicator').style.display = 'none'; }, 500); 
-                }).catch(error => { console.error(error); document.getElementById('sync-indicator').style.display = 'none'; }); 
-            } 
-            render(); 
+        function saveData() {
+            try {
+                localStorage.setItem('abella_hybrid_v6', JSON.stringify(appState));
+            } catch (e) {
+                console.error('LocalStorage save failed', e);
+            }
+            if (typeof dbRef !== 'undefined' && dbRef) {
+                document.getElementById('sync-indicator').style.display = 'block';
+                dbRef.set(appState).then(() => {
+                    setTimeout(() => { document.getElementById('sync-indicator').style.display = 'none'; }, 500);
+                }).catch(error => {
+                    console.error('Firebase save failed', error);
+                    document.getElementById('sync-indicator').style.display = 'none';
+                });
+            }
+            try { render(); } catch (e) { console.error('Render failed after saveData', e); }
         }
 
         function render() { 
@@ -545,12 +623,14 @@
             }).join(''); 
             
             updateTimersDOM();
+            renderUndoCountdowns();
         }
 
         function renderGuestRequests() {
             const container = document.getElementById('guest-requests-active-list');
             const archiveContainer = document.getElementById('guest-requests-archive-list');
-            
+            const btnMore = document.getElementById('btn-more-req');
+
             // 1. Active Requests
             if (!appState.guestRequests || appState.guestRequests.length === 0) { 
                 container.innerHTML = '<p style="text-align:center;color:var(--text-sec); font-size:0.8rem;">لا توجد طلبات نشطة</p>'; 
@@ -564,33 +644,51 @@
                 renderGuestRequestTimers();
             }
 
-            // 2. Archived Requests
+            // 2. Archived Requests (Pagination)
             if (!appState.guestRequestsLog || appState.guestRequestsLog.length === 0) {
                 archiveContainer.innerHTML = '<p style="text-align:center;color:var(--text-sec); font-size:0.7rem;">الأرشيف فارغ</p>';
+                btnMore.style.display = 'none';
             } else {
                 appState.guestRequestsLog.sort((a,b) => b.id - a.id);
-                archiveContainer.innerHTML = appState.guestRequestsLog.map(item => createLogRow(item)).join('');
+                const visibleLogs = appState.guestRequestsLog.slice(0, appState.archiveViewLimit.req);
+                archiveContainer.innerHTML = visibleLogs.map(item => createLogRow(item)).join('');
+                
+                if (appState.guestRequestsLog.length > appState.archiveViewLimit.req) {
+                    btnMore.style.display = 'block';
+                    btnMore.innerText = `⬇️ عرض المزيد (${appState.guestRequestsLog.length - appState.archiveViewLimit.req} متبقي)`;
+                } else {
+                    btnMore.style.display = 'none';
+                }
             }
         }
 
         function renderAllLogs() {
-            // 1. Cleaning Log (Strictly Cleaning)
             const cleaningLog = appState.log || [];
-            cleaningLog.sort((a, b) => b.id - a.id || 0); // safe sort
+            cleaningLog.sort((a, b) => b.id - a.id || 0); 
             renderLogSection(cleaningLog, 'cleaning-log-list', 'لا توجد عمليات تنظيف');
             
-            // 2. Maintenance Active
             const activeMaintHTML = appState.activeMaintenance.map(m => renderActiveMaintenanceRow(m)).join('');
             document.getElementById('maintenance-active-list').innerHTML = activeMaintHTML || '<p style="text-align:center;color:var(--text-sec);font-size:0.8rem;">لا توجد صيانة نشطة</p>';
             
-            // 3. Maintenance Archive
+            // Maintenance Archive (Pagination)
             const maintLog = appState.completedMaintenanceLog || [];
             maintLog.sort((a, b) => b.id - a.id);
             const maintArchiveContainer = document.getElementById('maintenance-archive-list');
+            const btnMoreMaint = document.getElementById('btn-more-maint');
+
             if (maintLog.length === 0) {
                 maintArchiveContainer.innerHTML = '<p style="text-align:center;color:var(--text-sec); font-size:0.7rem;">الأرشيف فارغ</p>';
+                btnMoreMaint.style.display = 'none';
             } else {
-                maintArchiveContainer.innerHTML = maintLog.map(item => createLogRow(item)).join('');
+                const visibleMaint = maintLog.slice(0, appState.archiveViewLimit.maint);
+                maintArchiveContainer.innerHTML = visibleMaint.map(item => createLogRow(item)).join('');
+                
+                if (maintLog.length > appState.archiveViewLimit.maint) {
+                    btnMoreMaint.style.display = 'block';
+                    btnMoreMaint.innerText = `⬇️ عرض المزيد (${maintLog.length - appState.archiveViewLimit.maint} متبقي)`;
+                } else {
+                    btnMoreMaint.style.display = 'none';
+                }
             }
         }
 
@@ -607,10 +705,11 @@
             if (item.finishImg) statusBadge = 'صيانة منجزة ✅'; else if (item.maintDesc && !item.finishImg && item.type !== 'request') statusBadge = 'تحتاج صيانة 🛠️'; 
             if (item.type === 'request') statusBadge = 'طلب منفذ ✅';
             
+            const dateStr = getFormattedDate(); // Get Date String
             let maintDetails = ''; 
             if (item.maintDesc) { maintDetails += `<div style="font-size:0.7rem; color:var(--danger); margin-top:2px;">**${item.type === 'request' ? 'الطلب' : 'العطل'}:** ${item.maintDesc}</div>`; if (item.maintImg) maintDetails += `<a href="${item.maintImg}" target="_blank" class="btn-undo" style="border-color:var(--danger); color:var(--danger); margin-top:5px; padding:4px;">صورة العطل</a>`; } 
             if (item.finishImg) { maintDetails += `<div style="font-size:0.7rem; color:var(--success); margin-top:2px;">**إنهاء الصيانة في:** ${item.timeFinish}</div>`; maintDetails += `<a href="${item.finishImg}" target="_blank" class="btn-undo" style="border-color:var(--success); color:var(--success); margin-top:5px; padding:4px;">صورة الإنهاء</a>`; }
-            return `<div style="border-bottom:1px solid var(--border-color); padding:8px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:center;"><div><strong>${item.num}</strong>${item.isLate ? '<span style="color:var(--danger); font-size:0.7rem"> (تأخير)</span>' : ''}</div><div style="text-align:left"><span class="badge">${statusBadge}</span></div></div><div style="font-size:0.65rem; color:var(--text-sec); margin-top:4px;">${historyText}</div>${maintDetails}</div>`;
+            return `<div style="border-bottom:1px solid var(--border-color); padding:8px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:center;"><div><strong>${item.num} <span style="font-size:0.7rem; color:var(--text-sec); font-weight:normal;">- ${dateStr}</span></strong>${item.isLate ? '<span style="color:var(--danger); font-size:0.7rem"> (تأخير)</span>' : ''}</div><div style="text-align:left"><span class="badge">${statusBadge}</span></div></div><div style="font-size:0.65rem; color:var(--text-sec); margin-top:4px;">${historyText}</div>${maintDetails}</div>`;
         }
 
         function renderActiveMaintenanceRow(maint) { 
@@ -619,7 +718,21 @@
         }
         function renderGuestRequestTimers() { if (!appState.guestRequests) return; appState.guestRequests.forEach(req => { const el = document.getElementById(`req-timer-${req.id}`); if (!el) return; const diff = Date.now() - req.startTime; const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000); el.innerText = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }); }
         function renderActiveMaintenance() { appState.activeMaintenance.forEach(maint => { const el = document.getElementById(`maint-timer-${maint.id}`); if (!el) return; const diff = Date.now() - maint.startTime; const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000); el.innerText = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }); }
-        function renderUndoCountdowns() { appState.rooms.forEach(room => { const btn = document.querySelector(`[onclick="undoRoom(${room.id})"]`); if (btn && room.undoExpiry) { const left = Math.ceil((room.undoExpiry - Date.now()) / 1000); if (left <= 0) { btn.style.display = 'none'; return; } btn.innerText = `تراجع (${left}) ↩`; if (left <= 5) { btn.classList.remove('active-anim'); btn.classList.add('urgent-anim'); } else { btn.classList.add('active-anim'); btn.classList.remove('urgent-anim'); } } }); }
+        
+        function renderUndoCountdowns() { 
+            appState.rooms.forEach(room => { 
+                const btn = document.querySelector(`[onclick="undoRoom(${room.id})"]`); 
+                if (btn && room.undoExpiry) { 
+                    const left = Math.ceil((room.undoExpiry - Date.now()) / 1000); 
+                    if (left <= 0) { 
+                        btn.style.display = 'none'; return; 
+                    } 
+                    btn.innerText = `تراجع (${left}) ↩`; 
+                    if (left <= 5) { btn.classList.remove('active-anim'); btn.classList.add('urgent-anim'); } 
+                    else { btn.classList.add('active-anim'); btn.classList.remove('urgent-anim'); } 
+                } 
+            }); 
+        }
         
         function updateStats() { 
             const totalLog = [...appState.log, ...appState.completedMaintenanceLog]; 
@@ -630,11 +743,20 @@
             const reqBox = document.getElementById('stat-req-box');
             const reqText = document.getElementById('stat-req-text');
             const activeReqs = appState.guestRequests || [];
+            
+            // Logic: Active first, else Last Completed
             if (activeReqs.length > 0) {
                 const latest = activeReqs[activeReqs.length - 1]; 
                 reqText.innerText = `${latest.num} ${latest.details.substring(0, 10)}..`;
                 reqBox.classList.add('pulse-urgent-box');
                 reqBox.style.borderColor = 'var(--danger)';
+            } else if (appState.guestRequestsLog && appState.guestRequestsLog.length > 0) {
+                // Show last completed request
+                const lastDone = appState.guestRequestsLog[0]; // First item because we unshift
+                reqText.innerText = `✅ تم: ${lastDone.num}`;
+                reqBox.classList.remove('pulse-urgent-box');
+                reqBox.style.borderColor = 'var(--success)';
+                reqBox.style.color = 'var(--success)';
             } else {
                 reqText.innerText = 'لا توجد طلبات';
                 reqBox.classList.remove('pulse-urgent-box');
@@ -648,7 +770,20 @@
                 document.getElementById('stat-most-req').innerText = mostReq;
             } else { document.getElementById('stat-most-req').innerText = "--"; }
         }
-        function updateTimersDOM() { appState.rooms.forEach(room => { const el = document.getElementById(`timer-${room.id}`); if (!el) return; if (room.status === 'scheduled') { el.innerText = 'مجدول'; el.style.color = '#999'; return; } const diff = room.deadline - Date.now(); const m = Math.floor(Math.abs(diff) / 60000); const s = Math.floor((Math.abs(diff) % 60000) / 1000); el.innerText = `${diff < 0 ? '+' : ''}${m}:${s.toString().padStart(2, '0')}`; el.className = `timer-display ${diff < 0 ? 'timer-danger' : 'timer-active'}`; }); }
+
+        function updateTimersDOM() { 
+            appState.rooms.forEach(room => { 
+                const el = document.getElementById(`timer-${room.id}`); 
+                if (!el) return; 
+                if (room.status === 'scheduled') { el.innerText = 'مجدول'; el.style.color = '#999'; return; } 
+                const diff = room.deadline - Date.now(); 
+                const m = Math.floor(Math.abs(diff) / 60000); 
+                const s = Math.floor((Math.abs(diff) % 60000) / 1000); 
+                el.innerText = `${diff < 0 ? '+' : ''}${m}:${s.toString().padStart(2, '0')}`; 
+                el.className = `timer-display ${diff < 0 ? 'timer-danger' : 'timer-active'}`; 
+            }); 
+        }
+
         function renderProgress() { const activeRooms = appState.rooms.filter(room => ['acknowledging', 'cleaning', 'checking', 'overdue'].includes(room.status)); if (activeRooms.length === 0) { document.getElementById('progressSection').style.display = 'none'; return; } document.getElementById('progressSection').style.display = 'block'; document.getElementById('progressSection').innerHTML = activeRooms.map(room => { let total = CONFIG.times.TRAVEL; if (room.status === 'cleaning') { total = appState.turbo ? CONFIG.times.OUT_TURBO : CONFIG.times.OUT_NORM; if (room.type === 'stay') total = appState.turbo ? CONFIG.times.STAY_TURBO : CONFIG.times.STAY_NORM; if (room.isSuperTurbo) total -= (5 * 60000); } else if (room.status === 'checking') total = CONFIG.times.CHECKING; const elapsed = Date.now() - room.startTime; const pct = Math.min(100, (elapsed / total) * 100); let color = 'var(--primary)', label = 'تنظيف', icon = '🧹'; if (room.status === 'acknowledging') { color = 'var(--upgrade)'; label = 'انتقال'; icon = '🏃'; } else if (room.status === 'checking') { color = 'var(--warning)'; label = 'فحص'; icon = '🔎'; } else if (room.status === 'overdue') { color = 'var(--danger)'; label = 'تأخير'; icon = '🚨'; } return `<div style="display:flex; align-items:center; margin-bottom:5px; background:var(--bg-card); padding:5px; border-radius:8px; border:1px solid var(--border-color);"><div style="font-weight:bold; font-size:0.8rem; width:40px;">${room.num}</div><div style="flex:1; height:8px; background:var(--bg-body); border-radius:4px; margin:0 10px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${color}; transition:width 1s linear;"></div></div><div style="font-size:0.7rem; color:${color}; font-weight:bold;">${icon} ${label}</div></div>`; }).join(''); }
 
         // 🔥 3. UTILITY FUNCTIONS
@@ -698,14 +833,15 @@
 
         async function confirmFinishRoom() { 
             const room = appState.rooms.find(r => r.id === activeRoomId); 
-            if (!room) { showAlert('حدث خطأ: الغرفة غير موجودة.', 'error'); return; }
+            if (!room) { showCustomAlert('حدث خطأ: الغرفة غير موجودة.', 'error'); return; }
             
             const status = document.getElementById('modal-notes').value; 
             const isLate = document.getElementById('delay-reason-section').style.display === 'block'; 
             const delayReason = document.getElementById('modal-delay').value; 
             const shouldSendWhatsapp = document.getElementById('inpSendWhatsapp').checked; 
-            
-            if (isLate && !delayReason) { showAlert('⚠️ يجب اختيار سبب التأخير لأنه إجباري.', 'warning'); return; } 
+            const duration = Date.now() - room.startTime;
+
+            if (isLate && !delayReason) { showCustomAlert('⚠️ يجب اختيار سبب التأخير لأنه إجباري.', 'warning'); return; } 
             
             room.historyLogs.push({ action: 'توثيق', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) }); 
             
@@ -713,7 +849,7 @@
                 const desc = document.getElementById('repair-details-input').value; 
                 const file = document.getElementById('modal-img-camera-input').files[0]; 
                 
-                if (!desc || !file) { showAlert('⚠️ مطلوب وصف العطل وصورة العطل لتوثيق الصيانة.', 'warning'); return; } 
+                if (!desc || !file) { showCustomAlert('⚠️ مطلوب وصف العطل وصورة العطل لتوثيق الصيانة.', 'warning'); return; } 
                 
                 const btn = document.getElementById('btn_confirm_finish');
                 btn.innerText = 'جاري الرفع...'; 
@@ -723,7 +859,7 @@
                 if (!imgUrl) { 
                     btn.disabled = false; 
                     btn.innerText = 'تأكيد وإرسال 🚀'; 
-                    showAlert('❌ فشل رفع الصورة. حاول مرة أخرى.', 'error'); 
+                    showCustomAlert('❌ فشل رفع الصورة. حاول مرة أخرى.', 'error'); 
                     return; 
                 } 
                 
@@ -738,11 +874,11 @@
                 
                 if (shouldSendWhatsapp) { 
                     const hist = maintEntry.history.map(h => `${h.action}: ${h.time}`).join('\n'); 
-                    let waMsg = `*🚨 تنبيه صيانة (غرفة ${maintEntry.num})* \n----------------\n${hist}\n----------------\n🛠️ العطل: ${desc}\n⚠️ التأخير: ${isLate ? delayReason : 'لا يوجد'}\n📎 رابط الصورة: ${imgUrl}`; 
+                    let waMsg = `Adora | *🚨 تنبيه صيانة (غرفة ${maintEntry.num})* \n----------------\n${hist}\n----------------\n🛠️ العطل: ${desc}\n⚠️ التأخير: ${isLate ? delayReason : 'لا يوجد'}\n📎 رابط الصورة: ${imgUrl}`; 
                     window.location.href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
                 } 
             } else { 
-                const logEntry = { num: room.num, type: room.type, status: status, history: room.historyLogs, isLate, delayReason: isLate ? delayReason : '' }; 
+                const logEntry = { num: room.num, type: room.type, status: status, history: room.historyLogs, isLate, delayReason: isLate ? delayReason : '', duration: duration }; 
                 appState.log.unshift(logEntry); 
                 appState.rooms = appState.rooms.filter(r => r.id !== room.id); 
                 saveData(); 
@@ -750,7 +886,7 @@
                 
                 if (shouldSendWhatsapp) { 
                     const hist = logEntry.history.map(h => `${h.action}: ${h.time}`).join('\n'); 
-                    let waMsg = `*تقرير غرفة ${logEntry.num}*\n----------------\n${hist}\n----------------\n✅ الحالة: جاهزة`; 
+                    let waMsg = `Adora | *تقرير غرفة ${logEntry.num}*\n----------------\n${hist}\n----------------\n✅ الحالة: جاهزة`; 
                     if (isLate) waMsg += `\n⚠️ تأخير: ${delayReason}`; 
                     window.location.href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`;
                 } 
@@ -758,7 +894,37 @@
         }
 
         function openCompleteMaintenanceModal(id) { activeMaintId = id; const maint = appState.activeMaintenance.find(m => m.id === id); if (!maint) return; document.getElementById('maint-room-num-display').innerText = `غرفة ${maint.num}`; document.getElementById('maint-img-camera-input').value = ''; document.getElementById('complete-maint-modal').style.display = 'flex'; }
-        async function confirmCompleteMaintenance() { const maint = appState.activeMaintenance.find(m => m.id === activeMaintId); if (!maint) return; const file = document.getElementById('maint-img-camera-input').files[0]; if (!file) { showAlert('مطلوب صورة إنهاء العمل لتوثيق الصيانة.', 'error'); return; } document.getElementById('btn_confirm_maint_finish').innerText = 'جاري الرفع...'; document.getElementById('btn_confirm_maint_finish').disabled = true; const imgUrl = await uploadToImgBB(file); if (!imgUrl) { document.getElementById('btn_confirm_maint_finish').disabled = false; document.getElementById('btn_confirm_maint_finish').innerText = 'توثيق الإنهاء وإرسال 🚀'; showAlert('فشل رفع الصورة لـ ImgBB. حاول مرة أخرى.', 'error'); return; } maint.timeFinish = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }); maint.finishImg = imgUrl; appState.activeMaintenance = appState.activeMaintenance.filter(m => m.id !== activeMaintId); appState.completedMaintenanceLog.unshift(maint); saveData(); closeAllModals(); document.getElementById('btn_confirm_maint_finish').innerText = 'توثيق الإنهاء وإرسال 🚀'; document.getElementById('btn_confirm_maint_finish').disabled = false; const hist = maint.history.map(h => `${h.action}: ${h.time}`).join(' | '); let waMsg = `*✅ إتمام الصيانة (غرفة ${maint.num})* \n----------------\n📝 تم توثيق الحاجة للصيانة في: ${hist}\n🛠️ العطل الموثق: ${maint.maintDesc}\n⏰ تم الانتهاء في: ${maint.timeFinish}\n📎 صورة الإنهاء: ${maint.finishImg}`; window.location.href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`; }
+        async function confirmCompleteMaintenance() { 
+            const maint = appState.activeMaintenance.find(m => m.id === activeMaintId); 
+            if (!maint) return; 
+            const file = document.getElementById('maint-img-camera-input').files[0]; 
+            if (!file) { showCustomAlert('مطلوب صورة إنهاء العمل لتوثيق الصيانة.', 'error'); return; } 
+            
+            document.getElementById('btn_confirm_maint_finish').innerText = 'جاري الرفع...'; 
+            document.getElementById('btn_confirm_maint_finish').disabled = true; 
+            
+            const imgUrl = await uploadToImgBB(file); 
+            if (!imgUrl) { 
+                document.getElementById('btn_confirm_maint_finish').disabled = false; 
+                document.getElementById('btn_confirm_maint_finish').innerText = 'توثيق الإنهاء وإرسال 🚀'; 
+                showCustomAlert('فشل رفع الصورة لـ ImgBB. حاول مرة أخرى.', 'error'); return; 
+            } 
+            
+            maint.timeFinish = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }); 
+            maint.finishImg = imgUrl; 
+            maint.duration = Date.now() - maint.startTime;
+
+            appState.activeMaintenance = appState.activeMaintenance.filter(m => m.id !== activeMaintId); 
+            appState.completedMaintenanceLog.unshift(maint); 
+            saveData(); 
+            closeAllModals(); 
+            document.getElementById('btn_confirm_maint_finish').innerText = 'توثيق الإنهاء وإرسال 🚀'; 
+            document.getElementById('btn_confirm_maint_finish').disabled = false; 
+            
+            const hist = maint.history.map(h => `${h.action}: ${h.time}`).join(' | '); 
+            let waMsg = `Adora | *✅ إتمام الصيانة (غرفة ${maint.num})* \n----------------\n📝 تم توثيق الحاجة للصيانة في: ${hist}\n🛠️ العطل الموثق: ${maint.maintDesc}\n⏰ تم الانتهاء في: ${maint.timeFinish}\n📎 صورة الإنهاء: ${maint.finishImg}`; 
+            window.location.href = `https://wa.me/?text=${encodeURIComponent(waMsg)}`; 
+        }
         
         function completeRequest(id) { 
             const req = appState.guestRequests.find(r => r.id === id); 
@@ -771,7 +937,7 @@
             appState.guestRequests = appState.guestRequests.filter(r => r.id !== id); 
             saveData(); 
             render(); 
-            showAlert(`تم توثيق تنفيذ طلب الغرفة ${req.num}`, 'success'); 
+            showCustomAlert(`تم توثيق تنفيذ طلب الغرفة ${req.num}`, 'success'); 
         }
         
         function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(modal => modal.style.display = 'none'); }
@@ -780,22 +946,115 @@
         function updateSearch() { appState.searchText = document.getElementById('search-bar').value; render(); }
         function showResetModal() { pendingAction = 'archive'; document.getElementById('admin-password').value = ''; document.getElementById('password-modal').style.display = 'flex'; }
         function showLogClearModal() { pendingAction = 'clearLog'; document.getElementById('admin-password').value = ''; document.getElementById('password-modal').style.display = 'flex'; }
+        function showNewShiftModal() { pendingAction = 'newShift'; document.getElementById('admin-password').value = ''; document.getElementById('password-modal-msg').innerText = "أدخل كلمة المرور لبدء شفت جديد (سيتم مسح كل شيء)"; document.getElementById('password-modal').style.display = 'flex'; }
         
-        function checkPasswordAndAction() { const password = document.getElementById('admin-password').value; if (password === CONFIG.adminPass) { if (pendingAction === 'clearLog') { appState.log = []; appState.completedMaintenanceLog = []; appState.activeMaintenance = []; appState.guestRequests = []; appState.guestRequestsLog = []; saveData(); showAlert('تم مسح السجل بنجاح.', 'success'); } else if (pendingAction === 'archive') { const now = new Date(); const archiveKey = `abella_archive_${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`; const archiveData = { log: appState.log, completedMaintenanceLog: appState.completedMaintenanceLog, guestRequests: appState.guestRequests, guestRequestsLog: appState.guestRequestsLog, timestamp: now.toISOString() }; localStorage.setItem(archiveKey, JSON.stringify(archiveData)); appState.log = []; appState.completedMaintenanceLog = []; appState.guestRequests = []; appState.guestRequestsLog = []; saveData(); showAlert('تمت الأرشفة بنجاح.', 'success'); } closeAllModals(); } else { showAlert('كلمة المرور خاطئة.', 'error'); } }
+        function checkPasswordAndAction() { 
+            const password = document.getElementById('admin-password').value; 
+            if (password === CONFIG.adminPass) { 
+                if (pendingAction === 'clearLog') { 
+                    appState.log = []; saveData(); showCustomAlert('تم مسح سجل النظافة.', 'success'); 
+                } else if (pendingAction === 'newShift') {
+                    // FULL RESET
+                    appState = { rooms: [], log: [], activeMaintenance: [], completedMaintenanceLog: [], guestRequests: [], guestRequestsLog: [], turbo: false, searchText: "", archiveViewLimit: { req: 5, maint: 5 } };
+                    saveData();
+                    showCustomAlert('🌅 تم بدء شفت جديد وتصفير العدادات.', 'success');
+                } else if (pendingAction === 'archive') { 
+                    const now = new Date(); const archiveKey = `abella_archive_${now.getFullYear()}_${now.getMonth() + 1}_${now.getDate()}`; const archiveData = { log: appState.log, completedMaintenanceLog: appState.completedMaintenanceLog, guestRequests: appState.guestRequests, guestRequestsLog: appState.guestRequestsLog, timestamp: now.toISOString() }; localStorage.setItem(archiveKey, JSON.stringify(archiveData)); appState.log = []; appState.completedMaintenanceLog = []; appState.guestRequests = []; appState.guestRequestsLog = []; saveData(); showCustomAlert('تمت الأرشفة بنجاح.', 'success'); 
+                } 
+                closeAllModals(); 
+            } else { showCustomAlert('كلمة المرور خاطئة.', 'error'); } 
+        }
         
         function toggleTurboInput() { if (currentAddMode === 'request') { document.getElementById('stayOptions').style.display = document.getElementById('inpSuperTurbo').checked ? 'none' : 'block'; } }
-        function generateDailyReport() { let msg = `*تقرير منظومة Adora للمتابعة - ${new Date().toLocaleDateString('ar-EG')}*%0A--------------------------------%0A`; const allLog = [...appState.log, ...appState.completedMaintenanceLog, ...appState.guestRequestsLog]; allLog.sort((a, b) => b.id - a.id); allLog.forEach(item => { const findTime = (keywords) => { if (!item.history) return '--'; const h = item.history.find(x => keywords.some(k => x.action.includes(k))); if (!h) return '--'; return h.time.replace(/:\d{2}(?=\s|$)/, '').replace(/:\d{2}$/, ''); }; if (item.type === 'request') { msg += `🔔 *غرفة ${item.num}* (طلب نزيل)%0A   - الطلب: ${item.maintDesc.replace('طلب نزيل: ', '')}%0A   - ✅ الحالة: تم التنفيذ (${item.time.replace(/:\d{2}$/, '')})%0A--------------------------------%0A`; } else { const tEntry = findTime(['دخول']); const tClean = findTime(['بدء']); const tCheck = findTime(['تم', 'توثيق']); msg += `🔹 *غرفة ${item.num}* (${item.type === 'out' ? 'خروج' : 'ساكن'})%0A   - دخول: ${tEntry} | تنظيف: ${tClean} | فحص: ${tCheck}%0A`; if (item.finishImg) msg += `   - 🛠️ الحالة: صيانة منجزة ✅%0A`; else if (item.maintDesc) msg += `   - 🛠️ الحالة: تحتاج صيانة%0A`; else msg += `   - ✅ الحالة: جاهزة%0A`; if (item.isLate) msg += `   - ⚠️ تأخير: ${item.delayReason}%0A`; if (item.maintDesc) msg += `   - 📝 ملاحظة: ${item.maintDesc}%0A`; msg += `--------------------------------%0A`; } }); const totalOut = allLog.filter(x => x.type === 'out').length; const totalStay = allLog.filter(x => x.type === 'stay').length; const activeMaint = appState.activeMaintenance.length; const activeRequests = appState.guestRequests.length; msg += `📊 إجمالي خروج: ${totalOut} | إجمالي ساكن: ${totalStay}%0A`; if (activeMaint > 0) msg += `🚨 صيانة نشطة: ${activeMaint}%0A`; if (activeRequests > 0) msg += `🛎️ طلبات معلقة: ${activeRequests}%0A`; window.location.href = `https://wa.me/?text=${encodeURIComponent(msg)}`; }
+        
+        // Detailed Manager Report
+        function generateDailyReport() { 
+            let msg = `Adora | 📊 *تقرير المدير اليومي*\n📅 التاريخ: ${new Date().toLocaleDateString('ar-EG')}\n----------------\n`;
+            
+            const completedReqs = appState.guestRequestsLog ? appState.guestRequestsLog.length : 0;
+            const activeReqs = appState.guestRequests ? appState.guestRequests.length : 0;
+            
+            // Calculate Fastest/Slowest
+            let fastestClean = { num: '-', time: 99999999 };
+            let slowestMaint = { num: '-', time: 0 };
+            
+            if (appState.log) {
+                appState.log.forEach(l => {
+                    if (l.duration && l.duration < fastestClean.time) fastestClean = { num: l.num, time: l.duration };
+                });
+            }
+            if (appState.completedMaintenanceLog) {
+                appState.completedMaintenanceLog.forEach(m => {
+                    if (m.duration && m.duration > slowestMaint.time) slowestMaint = { num: m.num, time: m.duration };
+                });
+            }
+            
+            msg += `📈 *إحصائيات سريعة:*\n`;
+            msg += `   - طلبات منفذة: ${completedReqs}\n`;
+            if(fastestClean.num !== '-') msg += `   - 🚀 أسرع تنظيف: غرفة ${fastestClean.num} (${Math.ceil(fastestClean.time/60000)}د)\n`;
+            if(slowestMaint.num !== '-') msg += `   - 🐢 أبطأ صيانة: غرفة ${slowestMaint.num} (${Math.ceil(slowestMaint.time/60000)}د)\n`;
+            msg += `----------------\n`;
+
+            // Active Issues Section
+            if (activeReqs > 0) {
+                msg += `🛎️ *طلبات نزلاء معلقة (${activeReqs}):*\n`;
+                appState.guestRequests.forEach(r => msg += `   - غ ${r.num}: ${r.details}\n`);
+            }
+            
+            const activeMaint = appState.activeMaintenance.length;
+            if (activeMaint > 0) {
+                msg += `🚨 *صيانة نشطة (${activeMaint}):*\n`;
+                appState.activeMaintenance.forEach(m => msg += `   - غ ${m.num}: ${m.maintDesc}\n`); 
+            }
+
+            msg += `----------------\n`;
+            const lateRooms = appState.log.filter(x => x.isLate);
+            if (lateRooms.length > 0) {
+                msg += `⚠️ *غرف تأخرت (${lateRooms.length}):*\n`;
+                lateRooms.forEach(l => msg += `   - غ ${l.num}: ${l.delayReason}\n`);
+            } else {
+                msg += `✨ أداء ممتاز! لا يوجد تأخير.\n`;
+            }
+
+            window.location.href = `https://wa.me/?text=${encodeURIComponent(msg)}`; 
+        }
         
         async function uploadToImgBB(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const scale = 800 / Math.max(img.width, 800); canvas.width = img.width * scale; canvas.height = img.height * scale; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); canvas.toBlob(function(blob) { const formData = new FormData(); formData.append('image', blob); fetch(`https://api.imgbb.com/1/upload?key=${CONFIG.imgbbKey}`, { method: 'POST', body: formData }).then(response => response.json()).then(data => resolve(data.data.url)).catch(() => resolve(null)); }, 'image/jpeg', 0.8); }; img.src = e.target.result; }; reader.readAsDataURL(file); }); }
         function setupReelControl(container, textElement, type, stepVal) { let startY = 0; let isAnimating = false; container.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: false }); container.addEventListener('touchmove', (e) => { e.preventDefault(); if (isAnimating) return; const currentY = e.touches[0].clientY; const diff = startY - currentY; if (Math.abs(diff) > 20) { isAnimating = true; const direction = diff > 0 ? 1 : -1; if (navigator.vibrate) navigator.vibrate(10); playTickSound(); const animClass = direction > 0 ? 'roll-up' : 'roll-down'; textElement.classList.add(animClass); setTimeout(() => { if (type === 'period') { togglePeriod(); } else { changeTimeValue(type, direction * stepVal); } }, 100); setTimeout(() => { textElement.classList.remove(animClass); isAnimating = false; startY = currentY; }, 210); } }, { passive: false }); }
         function playTickSound() { try { const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return; const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = 'square'; osc.frequency.setValueAtTime(500, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.04); gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.05); } catch (e) {} }
         
-        // Setup Time Click Listeners Manually since they are complex
         const setupTime = (id, type, step) => { const el = document.getElementById(id); const textEl = document.getElementById(type === 'hour' ? 'inpHour' : type === 'minute' ? 'inpMinute' : 'inpPeriodText'); if (el && textEl) { el.onclick = () => { playTickSound(); if(type === 'period') togglePeriod(); else changeTimeValue(type, step); }; setupReelControl(el, textEl, type, step); } };
         setupTime('hourBox', 'hour', 1); setupTime('minuteBox', 'minute', 5); setupTime('periodBox', 'period', 0);
 
-        // Mock showAlert since it was called but undefined
-        function showAlert(msg, type) { alert(msg); }
+        // 🔥 CUSTOM ALERT FUNCTION 🔥
+        function showCustomAlert(msg, type = 'info') {
+            const modal = document.getElementById('customAlertModal');
+            const iconEl = document.getElementById('alertIcon');
+            const msgEl = document.getElementById('alertMessage');
+            if (type === 'success') { iconEl.innerHTML = '✅'; iconEl.style.color = 'var(--success)'; }
+            else if (type === 'error') { iconEl.innerHTML = '❌'; iconEl.style.color = 'var(--danger)'; }
+            else if (type === 'warning') { iconEl.innerHTML = '⚠️'; iconEl.style.color = 'var(--warning)'; }
+            else { iconEl.innerHTML = 'ℹ️'; iconEl.style.color = 'var(--primary)'; }
+            msgEl.innerText = msg;
+            modal.style.display = 'flex';
+        }
+        function closeCustomAlert() { document.getElementById('customAlertModal').style.display = 'none'; }
+        // Mock showAlert for compatibility, redirect to custom one
+        function showAlert(msg, type) { showCustomAlert(msg, type); }
+
+        // Window Binding for robustness
+        window.undoRoom = undoRoom;
+        window.promptStartRoom = promptStartRoom;
+        window.commitStartRoom = commitStartRoom;
+        window.promptAction = promptAction;
+        window.executePhase = executePhase;
+        window.openFinishModal = openFinishModal;
+        window.completeRequest = completeRequest;
+        window.showNewShiftModal = showNewShiftModal;
+        window.toggleArchive = toggleArchive;
+        window.loadMoreArchives = loadMoreArchives;
+        window.setRequestMode = setRequestMode;
+        window.closeCustomAlert = closeCustomAlert;
     </script>
 </body>
 </html>
