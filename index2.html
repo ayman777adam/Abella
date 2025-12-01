@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Adora | متابعة العمال & خدمات النزلاء</title>
+    <title>Adora | نظام العمليات المتكامل</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
@@ -11,7 +11,7 @@
 
     <style>
         /* ============================================================
-           CSS (V11.0: Final Stable Design)
+           CSS (V12.0: Ultimate Edition)
            ============================================================ */
         :root { --bg-body: #f4f6f8; --bg-card: #ffffff; --text-main: #2c3e50; --text-sec: #7f8c8d; --border-color: #e0e0e0; --primary: #0097a7; --primary-light: #e0f7fa; --success: #00b894; --danger: #d63031; --warning: #f1c40f; --upgrade: #7e57c2; --request-color: #673AB7; --request-light: #EDE7F6; --shadow: 0 4px 15px rgba(0,0,0,0.05); --circle-width: 7px; }
         body.dark-mode { --bg-body: #0f172a; --bg-card: #1e293b; --text-main: #f1f5f9; --text-sec: #94a3b8; --border-color: #334155; --primary: #38bdf8; --primary-light: rgba(56, 189, 248, 0.1); --request-color: #A78BFA; --request-light: rgba(139, 92, 246, 0.1); --shadow: 0 4px 20px rgba(0,0,0,0.4); }
@@ -23,8 +23,18 @@
         .header-left { display: flex; gap: 8px; align-items: center; background: var(--bg-body); padding: 4px; border-radius: 12px; border: 1px solid var(--border-color); }
         .tools-btn { background: transparent; border: none; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: 0.2s; position: relative; z-index: 1; }
         
-        .tools-btn.turbo-active { color: var(--success); background: var(--primary-light); animation: pulseGreen 1.5s infinite alternate; }
-        .tools-btn.turbo-active::after { content: ""; position: absolute; inset: -2px; border-radius: 10px; padding: 2px; background: conic-gradient(from 0deg, transparent 0deg, var(--success) 100deg, transparent 200deg); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: spinBorder 1.5s linear infinite; pointer-events: none; }
+        /* 🔥 زر تيربو دائري */
+        .tools-btn.turbo-active { 
+            color: var(--success); background: var(--primary-light); 
+            animation: pulseGreen 1.5s infinite alternate;
+            border-radius: 50% !important; width: 38px; height: 38px; padding: 0; display: inline-flex; justify-content: center; align-items: center;
+        }
+        .tools-btn.turbo-active::after { 
+            content: ""; position: absolute; inset: -3px; border-radius: 50%; padding: 2px; 
+            background: conic-gradient(from 0deg, transparent 0deg, var(--success) 100deg, transparent 200deg); 
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; 
+            animation: spinBorder 1.0s linear infinite; pointer-events: none; 
+        }
         @keyframes spinBorder { 100% { transform: rotate(360deg); } }
 
         .card, .section { background: var(--bg-card); border-radius: 18px; padding: 15px; box-shadow: var(--shadow); border: 1px solid var(--border-color); margin-bottom: 15px; transition: 0.3s; }
@@ -158,7 +168,8 @@
                     <div class="radio-btn-box" id="filter-active-maint">صيانة نشطة 🛠️</div>
                     <div class="radio-btn-box" id="filter-completed-maint">صيانة منجزة ✅</div>
                 </div>
-                <div id="worker-log-list" style="font-size:0.8rem; max-height:200px; overflow-y:auto;"><p id="log-none-p" style="text-align:center; color:var(--text-sec);">لا توجد عمليات بعد</p></div>
+                <div id="worker-log-list" style="font-size:0.8rem; min-height: 50px;"></div>
+                <button id="show-archive-btn" class="btn-undo" style="width:100%; margin-top:10px; display:none;">📂 فتح الأرشيف الكامل</button>
             </div>
 
             <div class="section" id="guest-requests-section">
@@ -177,17 +188,35 @@
                 <button class="modal-tab-btn" id="tab-request">🛎️ طلبات</button>
             </div>
             <h3 style="color:var(--primary); margin-top:0;" id="modal-title-add">إضافة غرفة جديدة</h3>
-            <div style="margin-bottom:15px; text-align:right;"><label class="modal-label">رقم الغرفة</label><input type="number" id="inpRoomNum" placeholder="رقم الغرفة"><div id="room-dup-alert" style="font-size:0.8rem; font-weight:bold; margin-top:8px; padding:5px; border-radius:5px; text-align:center; display:none;"></div></div>
+            <div style="margin-bottom:15px; text-align:right;">
+                <label class="modal-label">رقم الغرفة</label>
+                <input type="number" id="inpRoomNum" placeholder="رقم الغرفة">
+                <div id="room-dup-alert" style="font-size:0.75rem; font-weight:bold; margin-top:8px; padding:5px; border-radius:5px; text-align:right; display:none; white-space: pre-wrap; line-height: 1.4;"></div>
+            </div>
             <div id="cleaning-options"><div style="margin-bottom:15px;"><label class="modal-label">حالة الغرفة</label><input type="hidden" id="inpRoomType"><div class="custom-options-container"><div class="option-btn" id="opt_out">خروج (تنظيف فوري)</div><div class="option-btn" id="opt_stay">ساكن</div></div></div></div>
             <div id="request-options" style="display:none; margin-bottom:15px;"><label class="modal-label" style="color:var(--request-color);">تفاصيل الطلب</label><textarea id="inpRequestDetails" rows="3" placeholder="اكتب طلب النزيل هنا..."></textarea></div>
+            
+            <div class="toggle-container" style="background: rgba(255, 152, 0, 0.1); border-color: rgba(255, 152, 0, 0.3); margin-bottom: 10px;">
+                <div class="toggle-label" style="color: #ef6c00;" id="turbo-label">🚀 سوبر تيربو (خصم 5د)</div>
+                <label class="switch"><input type="checkbox" id="inpSuperTurbo"><span class="slider"></span></label>
+            </div>
+
             <div id="stayOptions" style="display:none; background:rgba(0,0,0,0.02); padding:10px; border-radius:10px; margin-bottom:15px; text-align:right;">
                 <label class="modal-label">وضع النزيل</label><input type="hidden" id="inpGuestStatus" value="in"><div class="radio-options-grid"><div class="radio-btn-box selected" id="gst_in">بالداخل</div><div class="radio-btn-box" id="gst_out">بالخارج</div></div>
                 <label class="modal-label" id="lblTime" style="margin-top:10px;">وقت التنفيذ/العودة</label>
                 <div class="time-input-container"><div id="hourBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpHour">12</span><span class="time-arrow down">▼</span></div><div id="minuteBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpMinute">00</span><span class="time-arrow down">▼</span></div><div id="periodBox" class="time-part-box"><span class="time-arrow">▲</span><span id="inpPeriodText">مساءً</span><span class="time-arrow down">▼</span></div></div>
                 <input type="hidden" id="inpHourValue" value="12"><input type="hidden" id="inpMinuteValue" value="0"><input type="hidden" id="inpPeriodValue" value="PM">
             </div>
-            <div class="toggle-container" style="background: rgba(255, 152, 0, 0.1); border-color: rgba(255, 152, 0, 0.3);"><div class="toggle-label" style="color: #ef6c00;" id="turbo-label">🚀 سوبر تيربو (خصم 5د)</div><label class="switch"><input type="checkbox" id="inpSuperTurbo"><span class="slider"></span></label></div>
+            
             <button class="full-btn" style="background:var(--success); margin-bottom:10px;" id="confirm-add-room">إضافة (وإرسال واتساب)</button><button class="full-btn" style="background:#ddd; color:#333;" id="cancel-add-room">إلغاء</button>
+        </div>
+    </div>
+
+    <div id="archive-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 400px; height: 80%; overflow: hidden; display:flex; flex-direction: column;">
+            <h3 style="color:var(--text-main); margin-top:0;">📂 الأرشيف الكامل</h3>
+            <div id="archive-list" style="flex:1; overflow-y: auto; text-align: right;"></div>
+            <button class="full-btn" style="background:#ddd; color:#333; margin-top:10px;" id="close-archive">إغلاق</button>
         </div>
     </div>
 
@@ -200,12 +229,19 @@
     <div id="action-confirm-modal" class="modal-overlay"><div class="modal-content" style="text-align:center;"><h3 id="confirm-title" style="color:var(--danger); margin-top:0;">تأكيد</h3><p id="confirm-message" style="font-size:0.9rem;">هل أنت متأكد؟</p><button id="confirm-yes-btn" class="full-btn" style="background:var(--success); margin-bottom:10px;">نعم، أؤكد</button><button class="full-btn" style="background:#ddd; color:#333;" id="cancel-confirm">إلغاء</button></div></div>
 
     <script>
-        // 🔥 GLOBAL VARIABLES (Accessible everywhere)
+        // 🔥 GLOBAL VARIABLES
         const CONFIG = { firebase: { apiKey: "AIzaSyDJ8EWvicHqjvX-g1-19oS5h-VUQjRjtG8", authDomain: "abella-all.firebaseapp.com", databaseURL: "https://abella-all-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "abella-all", storageBucket: "abella-all.firebasestorage.app", messagingSenderId: "608492409476", appId: "1:608492409476:web:6d6ac8e85dd2fba1b328d1" }, imgbbKey: "a7ec1c5e56839fcc6e0b6bda38257f05", adminPass: "fahd5", times: { OUT_NORM: 35 * 60000, OUT_TURBO: 30 * 60000, STAY_NORM: 25 * 60000, STAY_TURBO: 20 * 60000, TRAVEL: 15 * 60000, PREP_ALERT: 15 * 60000, CHECKING: 15 * 60000 } };
         let appState = { rooms: [], log: [], activeMaintenance: [], completedMaintenanceLog: [], guestRequests: [], turbo: false, currentLogFilter: 'all', searchText: "" };
         let currentAddMode = 'cleaning', db, dbRef, tempRoomId = null, activeRoomId = null, activeMaintId = null, pendingAction = null;
 
-        // 🔥 GLOBAL FUNCTIONS (Friend's Advice implemented directly)
+        // 🔥 GLOBAL FUNCTIONS & GLOBAL HAPTICS
+        // إضافة هزاز لأي ضغطة زر في الصفحة
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.classList.contains('btn-action') || e.target.classList.contains('radio-btn-box') || e.target.classList.contains('option-btn')) {
+                if (navigator.vibrate) navigator.vibrate(15);
+            }
+        });
+
         function undoRoom(id) { const room = appState.rooms.find(r => r.id === id); if (room && room.undoExpiry) { appState.rooms = appState.rooms.filter(r => r.id !== id); saveData(); } }
         function promptStartRoom(id) { tempRoomId = id; if (appState.turbo) commitStartRoom(true); else document.getElementById('rain-prompt-modal').style.display = 'flex'; }
         function commitStartRoom(isTurbo) { document.getElementById('rain-prompt-modal').style.display = 'none'; const room = appState.rooms.find(r => r.id === tempRoomId); if (room) { room.status = 'acknowledging'; room.startTime = Date.now(); room.deadline = Date.now() + CONFIG.times.TRAVEL; room.undoExpiry = Date.now() + 15000; room.isSuperTurbo = isTurbo; saveData(); } }
@@ -213,7 +249,7 @@
         function executePhase(id, type) { document.getElementById('action-confirm-modal').style.display = 'none'; const room = appState.rooms.find(r => r.id === id); if (!room) return; const now = Date.now(); if (type === 'ack') { room.status = 'cleaning'; room.startTime = now; let duration = appState.turbo ? CONFIG.times.OUT_TURBO : CONFIG.times.OUT_NORM; if (room.type === 'stay') duration = appState.turbo ? CONFIG.times.STAY_TURBO : CONFIG.times.STAY_NORM; if (room.isSuperTurbo) duration -= (5 * 60000); room.deadline = now + duration; if (!room.historyLogs) room.historyLogs = []; room.historyLogs.push({ action: 'بدء تنظيف', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) }); } else if (type === 'clean') { room.status = 'checking'; room.startTime = now; room.deadline = now + CONFIG.times.CHECKING; room.historyLogs.push({ action: 'تم التنظيف', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) }); } room.undoExpiry = now + 15000; saveData(); }
         function openFinishModal(id) { activeRoomId = id; const room = appState.rooms.find(r => r.id === id); if (!room) return; document.getElementById('modal-title-text').innerText = `📝 تقرير فحص الغرفة`; const isLate = room.status === 'overdue'; document.getElementById('delay-reason-section').style.display = isLate ? 'block' : 'none'; document.getElementById('modal-delay').value = ''; ['dly_work', 'dly_room', 'dly_other'].forEach(id => document.getElementById(id).classList.remove('selected')); document.getElementById('repair-details-input').value = ''; document.getElementById('modal-img-camera-input').value = ''; document.getElementById('inpSendWhatsapp').checked = false; setRoomStatus('جاهزة'); document.getElementById('final-modal').style.display = 'flex'; }
         function openCompleteMaintenanceModal(id) { activeMaintId = id; const maint = appState.activeMaintenance.find(m => m.id === id); if (!maint) return; document.getElementById('maint-room-num-display').innerText = `غرفة ${maint.num}`; document.getElementById('maint-img-camera-input').value = ''; document.getElementById('complete-maint-modal').style.display = 'flex'; }
-        function completeRequest(id) { const req = appState.guestRequests.find(r => r.id === id); if (!req) return; const logEntry = { id: Date.now(), num: req.num, type: 'request', status: 'تم التنفيذ ✅', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }), maintDesc: `طلب نزيل: ${req.details}`, history: [{ action: 'طلب', time: req.schedTime }, { action: 'تنفيذ', time: new Date().toLocaleTimeString('en-US') }] }; appState.log.unshift(logEntry); appState.guestRequests = appState.guestRequests.filter(r => r.id !== id); saveData(); render(); showAlert(`تم توثيق تنفيذ طلب الغرفة ${req.num}`, 'success'); }
+        function completeRequest(id) { const req = appState.guestRequests.find(r => r.id === id); if (!req) return; const logEntry = { id: Date.now(), num: req.num, type: 'request', status: 'تم التنفيذ ✅', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }), maintDesc: `طلب نزيل: ${req.details}`, history: [{ action: 'طلب', time: req.schedTime }, { action: 'تنفيذ', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) }] }; appState.log.unshift(logEntry); appState.guestRequests = appState.guestRequests.filter(r => r.id !== id); saveData(); render(); showAlert(`تم توثيق تنفيذ طلب الغرفة ${req.num}`, 'success'); }
         
         // 🔥 MAIN INITIALIZATION
         document.addEventListener('DOMContentLoaded', function() { initializeApp(); setupEventListeners(); initTimeFields(); });
@@ -224,7 +260,6 @@
             setInterval(tick, 1000); render();
         }
 
-        // 🔥 EVENT LISTENERS (Safe Binding)
         function setupEventListeners() {
             const bind = (id, event, func) => { const el = document.getElementById(id); if (el) el.addEventListener(event, func); };
             bind('report-btn-action', 'click', generateDailyReport); bind('turbo-mode-btn', 'click', toggleTurboMode); bind('dark-mode-btn', 'click', toggleDarkMode);
@@ -240,20 +275,27 @@
             bind('btn_confirm_maint_finish', 'click', confirmCompleteMaintenance); bind('cancel-complete-maint', 'click', closeAllModals);
             bind('confirm-reset-btn', 'click', checkPasswordAndAction); bind('cancel-password', 'click', closeAllModals);
             bind('confirm-yes-btn', 'click', executePendingAction); bind('cancel-confirm', 'click', closeAllModals);
-            bind('inpRoomNum', 'input', checkDuplicate);
-
-            // Time Controls with Reel
-            const setupTime = (id, type, step) => {
-                const el = document.getElementById(id); const textEl = document.getElementById(type === 'hour' ? 'inpHour' : type === 'minute' ? 'inpMinute' : 'inpPeriodText');
-                if (el && textEl) {
-                    el.addEventListener('click', () => { playTickSound(); if(type === 'period') togglePeriod(); else changeTimeValue(type, step); });
-                    setupReelControl(el, textEl, type, step);
+            
+            // Input Validation & Request Warning
+            bind('inpRoomNum', 'input', () => { checkDuplicate(); checkRequestWarnings(); });
+            
+            // Toggle Logic for Requests (Hide Time if Urgent)
+            document.getElementById('inpSuperTurbo').addEventListener('change', function() {
+                if (currentAddMode === 'request') {
+                    document.getElementById('stayOptions').style.display = this.checked ? 'none' : 'block';
                 }
-            };
+            });
+
+            // Show Archive
+            document.getElementById('show-archive-btn').addEventListener('click', openArchiveModal);
+            document.getElementById('close-archive').addEventListener('click', () => document.getElementById('archive-modal').style.display = 'none');
+
+            // Time Controls
+            const setupTime = (id, type, step) => { const el = document.getElementById(id); const textEl = document.getElementById(type === 'hour' ? 'inpHour' : type === 'minute' ? 'inpMinute' : 'inpPeriodText'); if (el && textEl) { el.addEventListener('click', () => { playTickSound(); if(type === 'period') togglePeriod(); else changeTimeValue(type, step); }); setupReelControl(el, textEl, type, step); } };
             setupTime('hourBox', 'hour', 1); setupTime('minuteBox', 'minute', 5); setupTime('periodBox', 'period', 0);
         }
 
-        // 🔥 LOGIC FUNCTIONS
+        // 🔥 LOGIC
         function tick() {
             const now = Date.now(); let needSave = false;
             appState.rooms.forEach(room => { if (room.status === 'scheduled' && now >= room.startTime) { room.status = 'acknowledging'; needSave = true; } else if (['cleaning', 'checking', 'acknowledging'].includes(room.status)) { if (now > room.deadline && room.status !== 'overdue') { room.status = 'overdue'; needSave = true; } } if (room.undoExpiry && now > room.undoExpiry) { delete room.undoExpiry; needSave = true; } });
@@ -300,17 +342,32 @@
             else if (appState.currentLogFilter === 'activeMaintenance') { document.getElementById('filter-active-maint').classList.add('selected-maint'); document.getElementById('worker-log-list').innerHTML = appState.activeMaintenance.map(maint => renderActiveMaintenanceRow(maint)).join(''); if (appState.activeMaintenance.length === 0) document.getElementById('worker-log-list').innerHTML = '<p style="text-align:center;color:var(--text-sec)">لا توجد غرف صيانة نشطة</p>'; return; } 
             else if (appState.currentLogFilter === 'completedMaintenanceLog') { document.getElementById('filter-completed-maint').classList.add('selected'); dataToRender = appState.completedMaintenanceLog; }
             dataToRender.sort((a, b) => b.id - a.id);
+            
+            // 🔥 Pagination (Limit 15)
+            const recentLogs = dataToRender.slice(0, 15);
             const listEl = document.getElementById('worker-log-list');
-            if (dataToRender.length === 0) { listEl.innerHTML = '<p style="text-align:center;color:var(--text-sec)">لا يوجد سجل</p>'; return; }
-            listEl.innerHTML = dataToRender.map(item => {
-                const historyText = item.history ? item.history.map(h => `${h.action}: ${h.time.replace(/:\d{2}(?=\s|$)/, '').replace(/:\d{2}$/, '')}`).join(' | ') : `وقت: ${item.time}`;
-                let statusBadge = item.status; if (item.finishImg) statusBadge = 'صيانة منجزة ✅'; else if (item.maintDesc && !item.finishImg && item.type !== 'request') statusBadge = 'تحتاج صيانة 🛠️'; if (item.type === 'request') statusBadge = 'طلب منفذ ✅';
-                let maintDetails = ''; if (item.maintDesc) { maintDetails += `<div style="font-size:0.7rem; color:var(--danger); margin-top:2px;">**${item.type === 'request' ? 'الطلب' : 'العطل'}:** ${item.maintDesc}</div>`; if (item.maintImg) maintDetails += `<a href="${item.maintImg}" target="_blank" class="btn-undo" style="border-color:var(--danger); color:var(--danger); margin-top:5px; padding:4px;">صورة العطل</a>`; } if (item.finishImg) { maintDetails += `<div style="font-size:0.7rem; color:var(--success); margin-top:2px;">**إنهاء الصيانة في:** ${item.timeFinish}</div>`; maintDetails += `<a href="${item.finishImg}" target="_blank" class="btn-undo" style="border-color:var(--success); color:var(--success); margin-top:5px; padding:4px;">صورة الإنهاء</a>`; }
-                return `<div style="border-bottom:1px solid var(--border-color); padding:8px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:center;"><div><strong>${item.num}</strong>${item.isLate ? '<span style="color:var(--danger); font-size:0.7rem"> (تأخير)</span>' : ''}</div><div style="text-align:left"><span class="badge">${statusBadge}</span></div></div><div style="font-size:0.65rem; color:var(--text-sec); margin-top:4px;">${historyText}</div>${maintDetails}</div>`;
-            }).join('');
+            const archiveBtn = document.getElementById('show-archive-btn');
+            
+            if (dataToRender.length > 15) { archiveBtn.style.display = 'block'; } else { archiveBtn.style.display = 'none'; }
+            if (recentLogs.length === 0) { listEl.innerHTML = '<p style="text-align:center;color:var(--text-sec)">لا يوجد سجل</p>'; return; }
+            
+            listEl.innerHTML = recentLogs.map(item => createLogRow(item)).join('');
         }
 
-        // ... Helpers (Reduced for brevity, same logic)
+        function createLogRow(item) {
+            const historyText = item.history ? item.history.map(h => `${h.action}: ${h.time}`).join(' | ') : `وقت: ${item.time}`;
+            let statusBadge = item.status; if (item.finishImg) statusBadge = 'صيانة منجزة ✅'; else if (item.maintDesc && !item.finishImg && item.type !== 'request') statusBadge = 'تحتاج صيانة 🛠️'; if (item.type === 'request') statusBadge = 'طلب منفذ ✅';
+            let maintDetails = ''; if (item.maintDesc) { maintDetails += `<div style="font-size:0.7rem; color:var(--danger); margin-top:2px;">**${item.type === 'request' ? 'الطلب' : 'العطل'}:** ${item.maintDesc}</div>`; if (item.maintImg) maintDetails += `<a href="${item.maintImg}" target="_blank" class="btn-undo" style="border-color:var(--danger); color:var(--danger); margin-top:5px; padding:4px;">صورة العطل</a>`; } if (item.finishImg) { maintDetails += `<div style="font-size:0.7rem; color:var(--success); margin-top:2px;">**إنهاء الصيانة في:** ${item.timeFinish}</div>`; maintDetails += `<a href="${item.finishImg}" target="_blank" class="btn-undo" style="border-color:var(--success); color:var(--success); margin-top:5px; padding:4px;">صورة الإنهاء</a>`; }
+            return `<div style="border-bottom:1px solid var(--border-color); padding:8px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:center;"><div><strong>${item.num}</strong>${item.isLate ? '<span style="color:var(--danger); font-size:0.7rem"> (تأخير)</span>' : ''}</div><div style="text-align:left"><span class="badge">${statusBadge}</span></div></div><div style="font-size:0.65rem; color:var(--text-sec); margin-top:4px;">${historyText}</div>${maintDetails}</div>`;
+        }
+
+        function openArchiveModal() {
+            const allLog = [...appState.log, ...appState.completedMaintenanceLog].sort((a, b) => b.id - a.id);
+            document.getElementById('archive-list').innerHTML = allLog.map(item => createLogRow(item)).join('');
+            document.getElementById('archive-modal').style.display = 'flex';
+        }
+
+        // ... Helpers
         function renderActiveMaintenanceRow(maint) { const timeStr = new Date(maint.startTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }); return `<div class="room-row status-pending"><div class="timer-display timer-danger" id="maint-timer-${maint.id}">0:00:00</div><div style="text-align:center"><div style="font-weight:800; font-size:1.2rem;">${maint.num}</div></div><div style="text-align:center"><span class="badge" style="background:var(--danger); color:white;">صيانة نشطة</span><div style="font-size:0.65rem; color:var(--text-sec); margin-top:2px;">تم توثيقها: ${timeStr}</div></div><div style="display:flex; flex-direction:column; gap:2px;"><button class="btn-action btn-finish" style="background:var(--success)" onclick="openCompleteMaintenanceModal(${maint.id})">أتممت الصيانة ✅</button>${maint.maintImg ? `<a href="${maint.maintImg}" target="_blank" class="btn-undo" style="border-color:var(--danger); color:var(--danger); margin-top:5px; padding:4px;">صورة العطل</a>` : ''}</div></div>`; }
         function renderGuestRequestTimers() { if (!appState.guestRequests) return; appState.guestRequests.forEach(req => { const el = document.getElementById(`req-timer-${req.id}`); if (!el) return; const diff = Date.now() - req.startTime; const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000); el.innerText = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }); }
         function renderActiveMaintenance() { appState.activeMaintenance.forEach(maint => { const el = document.getElementById(`maint-timer-${maint.id}`); if (!el) return; const diff = Date.now() - maint.startTime; const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); const s = Math.floor((diff % 60000) / 1000); el.innerText = `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`; }); }
@@ -320,15 +377,36 @@
         function renderProgress() { const activeRooms = appState.rooms.filter(room => ['acknowledging', 'cleaning', 'checking', 'overdue'].includes(room.status)); if (activeRooms.length === 0) { document.getElementById('progressSection').style.display = 'none'; return; } document.getElementById('progressSection').style.display = 'block'; document.getElementById('progressSection').innerHTML = activeRooms.map(room => { let total = CONFIG.times.TRAVEL; if (room.status === 'cleaning') { total = appState.turbo ? CONFIG.times.OUT_TURBO : CONFIG.times.OUT_NORM; if (room.type === 'stay') total = appState.turbo ? CONFIG.times.STAY_TURBO : CONFIG.times.STAY_NORM; if (room.isSuperTurbo) total -= (5 * 60000); } else if (room.status === 'checking') total = CONFIG.times.CHECKING; const elapsed = Date.now() - room.startTime; const pct = Math.min(100, (elapsed / total) * 100); let color = 'var(--primary)', label = 'تنظيف', icon = '🧹'; if (room.status === 'acknowledging') { color = 'var(--upgrade)'; label = 'انتقال'; icon = '🏃'; } else if (room.status === 'checking') { color = 'var(--warning)'; label = 'فحص'; icon = '🔎'; } else if (room.status === 'overdue') { color = 'var(--danger)'; label = 'تأخير'; icon = '🚨'; } return `<div style="display:flex; align-items:center; margin-bottom:5px; background:var(--bg-card); padding:5px; border-radius:8px; border:1px solid var(--border-color);"><div style="font-weight:bold; font-size:0.8rem; width:40px;">${room.num}</div><div style="flex:1; height:8px; background:var(--bg-body); border-radius:4px; margin:0 10px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:${color}; transition:width 1s linear;"></div></div><div style="font-size:0.7rem; color:${color}; font-weight:bold;">${icon} ${label}</div></div>`; }).join(''); }
 
         function openAddModal() { document.getElementById('inpRoomNum').value = ''; document.getElementById('room-dup-alert').style.display = 'none'; document.getElementById('inpRoomType').value = ''; document.getElementById('opt_out').classList.remove('selected'); document.getElementById('opt_stay').classList.remove('selected'); document.getElementById('stayOptions').style.display = 'none'; document.getElementById('inpSuperTurbo').checked = false; document.getElementById('inpRequestDetails').value = ''; initTimeFields(); switchAddMode('cleaning'); document.getElementById('addRoomModal').style.display = 'flex'; }
-        function switchAddMode(mode) { currentAddMode = mode; document.getElementById('tab-cleaning').classList.remove('active', 'active-req'); document.getElementById('tab-request').classList.remove('active', 'active-req'); if (mode === 'cleaning') { document.getElementById('tab-cleaning').classList.add('active'); document.getElementById('cleaning-options').style.display = 'block'; document.getElementById('request-options').style.display = 'none'; document.getElementById('stayOptions').style.display = 'none'; document.getElementById('modal-title-add').innerText = 'إضافة غرفة جديدة'; document.getElementById('modal-title-add').style.color = 'var(--primary)'; document.getElementById('turbo-label').innerText = '🚀 سوبر تيربو (خصم 5د)'; } else { document.getElementById('tab-request').classList.add('active-req'); document.getElementById('cleaning-options').style.display = 'none'; document.getElementById('request-options').style.display = 'block'; document.getElementById('stayOptions').style.display = 'block'; document.getElementById('lblTime').innerText = 'وقت تنفيذ الطلب'; document.getElementById('modal-title-add').innerText = '🛎️ طلب نزيل جديد'; document.getElementById('modal-title-add').style.color = 'var(--request-color)'; document.getElementById('turbo-label').innerText = '🔥 طلب عاجل جداً'; } }
+        function switchAddMode(mode) { 
+            currentAddMode = mode; document.getElementById('tab-cleaning').classList.remove('active', 'active-req'); document.getElementById('tab-request').classList.remove('active', 'active-req'); 
+            const isUrgent = document.getElementById('inpSuperTurbo').checked;
+            if (mode === 'cleaning') { 
+                document.getElementById('tab-cleaning').classList.add('active'); document.getElementById('cleaning-options').style.display = 'block'; document.getElementById('request-options').style.display = 'none'; document.getElementById('stayOptions').style.display = 'none'; 
+                document.getElementById('modal-title-add').innerText = 'إضافة غرفة جديدة'; document.getElementById('modal-title-add').style.color = 'var(--primary)'; document.getElementById('turbo-label').innerText = '🚀 سوبر تيربو (خصم 5د)'; 
+            } else { 
+                document.getElementById('tab-request').classList.add('active-req'); document.getElementById('cleaning-options').style.display = 'none'; document.getElementById('request-options').style.display = 'block'; 
+                // إخفاء الوقت إذا كان "عاجل" مفعل
+                document.getElementById('stayOptions').style.display = isUrgent ? 'none' : 'block'; 
+                document.getElementById('lblTime').innerText = 'وقت تنفيذ الطلب'; document.getElementById('modal-title-add').innerText = '🛎️ طلب نزيل جديد'; document.getElementById('modal-title-add').style.color = 'var(--request-color)'; document.getElementById('turbo-label').innerText = '🔥 طلب عاجل جداً'; 
+            } 
+        }
         
         function addNewRoom() {
             const num = document.getElementById('inpRoomNum').value; if (!num) { showAlert('يرجى إدخال رقم الغرفة.', 'warning'); return; }
             if (currentAddMode === 'request') {
                 const details = document.getElementById('inpRequestDetails').value; if (!details) { showAlert('يرجى كتابة تفاصيل الطلب.', 'warning'); return; }
-                const hVal = document.getElementById('inpHourValue').value; const mVal = document.getElementById('inpMinuteValue').value; const period = document.getElementById('inpPeriodValue').value;
-                const displayTime = `${hVal.padStart(2, '0')}:${mVal.padStart(2, '0')} ${period === 'AM' ? 'صباحاً' : 'مساءً'}`;
                 const isUrgent = document.getElementById('inpSuperTurbo').checked;
+                let displayTime = "فوري";
+                
+                // إذا لم يكن عاجل، نأخذ الوقت من المحدد
+                if (!isUrgent) {
+                    const hVal = document.getElementById('inpHourValue').value; const mVal = document.getElementById('inpMinuteValue').value; const period = document.getElementById('inpPeriodValue').value;
+                    displayTime = `${hVal.padStart(2, '0')}:${mVal.padStart(2, '0')} ${period === 'AM' ? 'صباحاً' : 'مساءً'}`;
+                } else {
+                    // إذا عاجل، الوقت هو الآن
+                    displayTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+
                 const newRequest = { id: Date.now(), num, details, schedTime: displayTime, isUrgent, startTime: Date.now() };
                 appState.guestRequests.push(newRequest); saveData(); closeAllModals();
                 let waMsg = `*🛎️ طلب نزيل جديد*\nغرفة: ${num}\nالطلب: ${details}\nالتوقيت: ${displayTime}`; if (isUrgent) waMsg += `\n🔥 الحالة: عاجل جداً`; window.open(`https://wa.me/?text=${encodeURIComponent(waMsg)}`, '_blank'); return;
@@ -351,13 +429,74 @@
         function executePendingAction() { closeAllModals(); }
         function closeAllModals() { document.querySelectorAll('.modal-overlay').forEach(modal => { modal.style.display = 'none'; }); }
         function showAlert(message, type = 'warning') { let titleColor, icon, buttonColor; if (type === 'error') { titleColor = 'var(--danger)'; icon = '❌ خطأ'; buttonColor = 'var(--danger)'; } else if (type === 'success') { titleColor = 'var(--success)'; icon = '✅ نجاح'; buttonColor = 'var(--success)'; } else { titleColor = 'var(--warning)'; icon = '⚠️ انتبه'; buttonColor = 'var(--primary)'; } document.getElementById('confirm-title').innerText = icon; document.getElementById('confirm-title').style.color = titleColor; document.getElementById('confirm-message').innerText = message; const btn = document.getElementById('confirm-yes-btn'); btn.innerText = 'حسناً'; btn.style.background = buttonColor; btn.onclick = closeAllModals; document.getElementById('cancel-confirm').style.display = 'none'; document.getElementById('action-confirm-modal').style.display = 'flex'; }
-        function generateDailyReport() { let msg = `*تقرير منظومة Adora للمتابعة - ${new Date().toLocaleDateString('ar-EG')}*%0A--------------------------------%0A`; const allLog = [...appState.log, ...appState.completedMaintenanceLog]; allLog.sort((a, b) => b.id - a.id); allLog.forEach(item => { const findTime = (keywords) => { if (!item.history) return '--'; const h = item.history.find(x => keywords.some(k => x.action.includes(k))); if (!h) return '--'; return h.time.replace(/:\d{2}(?=\s|$)/, '').replace(/:\d{2}$/, ''); }; if (item.type === 'request') { msg += `🔔 *غرفة ${item.num}* (طلب نزيل)%0A   - الطلب: ${item.maintDesc.replace('طلب نزيل: ', '')}%0A   - ✅ الحالة: تم التنفيذ%0A--------------------------------%0A`; } else { const tEntry = findTime(['دخول']); const tClean = findTime(['بدء']); const tCheck = findTime(['تم', 'توثيق']); msg += `🔹 *غرفة ${item.num}* (${item.type === 'out' ? 'خروج' : 'ساكن'})%0A   - دخول: ${tEntry} | تنظيف: ${tClean} | فحص: ${tCheck}%0A`; if (item.finishImg) msg += `   - 🛠️ الحالة: صيانة منجزة ✅%0A`; else if (item.maintDesc) msg += `   - 🛠️ الحالة: تحتاج صيانة%0A`; else msg += `   - ✅ الحالة: جاهزة%0A`; if (item.isLate) msg += `   - ⚠️ تأخير: ${item.delayReason}%0A`; if (item.maintDesc) msg += `   - 📝 ملاحظة: ${item.maintDesc}%0A`; msg += `--------------------------------%0A`; } }); const totalOut = allLog.filter(x => x.type === 'out').length; const totalStay = allLog.filter(x => x.type === 'stay').length; const activeMaint = appState.activeMaintenance.length; const activeRequests = appState.guestRequests.length; msg += `📊 إجمالي خروج: ${totalOut} | إجمالي ساكن: ${totalStay}%0A`; if (activeMaint > 0) msg += `🚨 صيانة نشطة: ${activeMaint}%0A`; if (activeRequests > 0) msg += `🛎️ طلبات معلقة: ${activeRequests}%0A`; window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank'); }
+        
+        // 🔥 FIX: Clean Time Format in Report (No Regex)
+        function generateDailyReport() { 
+            let msg = `*تقرير منظومة Adora للمتابعة - ${new Date().toLocaleDateString('ar-EG')}*%0A--------------------------------%0A`; 
+            const allLog = [...appState.log, ...appState.completedMaintenanceLog]; allLog.sort((a, b) => b.id - a.id); 
+            allLog.forEach(item => { 
+                const findTime = (keywords) => { if (!item.history) return '--'; const h = item.history.find(x => keywords.some(k => x.action.includes(k))); if (!h) return '--'; return h.time; }; 
+                if (item.type === 'request') { 
+                    msg += `🔔 *غرفة ${item.num}* (طلب نزيل)%0A   - الطلب: ${item.maintDesc.replace('طلب نزيل: ', '')}%0A   - ✅ الحالة: تم التنفيذ (${item.time})%0A--------------------------------%0A`; 
+                } else { 
+                    const tEntry = findTime(['دخول']); const tClean = findTime(['بدء']); const tCheck = findTime(['تم', 'توثيق']); 
+                    msg += `🔹 *غرفة ${item.num}* (${item.type === 'out' ? 'خروج' : 'ساكن'})%0A   - دخول: ${tEntry} | تنظيف: ${tClean} | فحص: ${tCheck}%0A`; 
+                    if (item.finishImg) msg += `   - 🛠️ الحالة: صيانة منجزة ✅%0A`; else if (item.maintDesc) msg += `   - 🛠️ الحالة: تحتاج صيانة%0A`; else msg += `   - ✅ الحالة: جاهزة%0A`; 
+                    if (item.isLate) msg += `   - ⚠️ تأخير: ${item.delayReason}%0A`; if (item.maintDesc) msg += `   - 📝 ملاحظة: ${item.maintDesc}%0A`; 
+                    msg += `--------------------------------%0A`; 
+                } 
+            }); 
+            const totalOut = allLog.filter(x => x.type === 'out').length; const totalStay = allLog.filter(x => x.type === 'stay').length; const activeMaint = appState.activeMaintenance.length; const activeRequests = appState.guestRequests.length; 
+            msg += `📊 إجمالي خروج: ${totalOut} | إجمالي ساكن: ${totalStay}%0A`; if (activeMaint > 0) msg += `🚨 صيانة نشطة: ${activeMaint}%0A`; if (activeRequests > 0) msg += `🛎️ طلبات معلقة: ${activeRequests}%0A`; 
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank'); 
+        }
+        
         async function uploadToImgBB(file) { return new Promise((resolve) => { const reader = new FileReader(); reader.onload = function(e) { const img = new Image(); img.onload = function() { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const scale = 800 / Math.max(img.width, 800); canvas.width = img.width * scale; canvas.height = img.height * scale; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); canvas.toBlob(function(blob) { const formData = new FormData(); formData.append('image', blob); fetch(`https://api.imgbb.com/1/upload?key=${CONFIG.imgbbKey}`, { method: 'POST', body: formData }).then(response => response.json()).then(data => resolve(data.data.url)).catch(() => resolve(null)); }, 'image/jpeg', 0.8); }; img.src = e.target.result; }; reader.readAsDataURL(file); }); }
         function saveData() { saveToLocalStorage(); if (dbRef) { document.getElementById('sync-indicator').style.display = 'block'; dbRef.set(appState).then(() => { setTimeout(() => { document.getElementById('sync-indicator').style.display = 'none'; }, 500); }).catch(error => { console.error("Error saving to Firebase:", error); document.getElementById('sync-indicator').style.display = 'none'; }); } }
         function saveToLocalStorage() { localStorage.setItem('abella_hybrid_v6', JSON.stringify(appState)); }
         function setRoomType(type) { document.getElementById('inpRoomType').value = type; document.getElementById('opt_out').classList.remove('selected'); document.getElementById('opt_stay').classList.remove('selected'); if (type === 'out') { document.getElementById('opt_out').classList.add('selected'); document.getElementById('stayOptions').style.display = 'none'; } else { document.getElementById('opt_stay').classList.add('selected'); document.getElementById('stayOptions').style.display = 'block'; document.getElementById('lblTime').innerText = 'وقت عودة النزيل'; } }
         function setGuestStatus(status) { document.getElementById('inpGuestStatus').value = status; document.getElementById('gst_in').classList.remove('selected'); document.getElementById('gst_out').classList.remove('selected'); if (status === 'in') { document.getElementById('gst_in').classList.add('selected'); if(currentAddMode==='cleaning') document.getElementById('lblTime').innerText = 'وقت التنظيف المطلوب'; } else { document.getElementById('gst_out').classList.add('selected'); if(currentAddMode==='cleaning') document.getElementById('lblTime').innerText = 'وقت عودة النزيل'; } }
-        function checkDuplicate() { const val = document.getElementById('inpRoomNum').value; document.getElementById('room-dup-alert').style.display = 'none'; if (!val) return; const activeRoom = appState.rooms.find(room => room.num == val); if (activeRoom) { document.getElementById('room-dup-alert').innerText = `⛔ الغرفة نشطة حالياً (${activeRoom.status})`; document.getElementById('room-dup-alert').style.background = '#ffebee'; document.getElementById('room-dup-alert').style.color = '#c62828'; document.getElementById('room-dup-alert').style.display = 'block'; return; } const activeMaint = appState.activeMaintenance.find(room => room.num == val); if (activeMaint) { document.getElementById('room-dup-alert').innerText = `⛔ الغرفة قيد الصيانة حالياً (نشطة)`; document.getElementById('room-dup-alert').style.background = '#ffebee'; document.getElementById('room-dup-alert').style.color = '#c62828'; document.getElementById('room-dup-alert').style.display = 'block'; return; } }
+        
+        // 🔥 NEW: Check Duplicate Requests and Show Warning
+        function checkRequestWarnings() {
+            if (currentAddMode !== 'request') return;
+            const val = document.getElementById('inpRoomNum').value;
+            const alertBox = document.getElementById('room-dup-alert');
+            if (!val) { alertBox.style.display = 'none'; return; }
+            
+            // البحث عن طلبات سابقة
+            const prevReqs = appState.guestRequests.filter(r => r.num == val);
+            
+            if (prevReqs.length > 0) {
+                let msg = `⚠️ تنبيه: الغرفة ${val} لها طلبات سابقة:\n`;
+                prevReqs.forEach(r => {
+                    msg += `- ${r.details} (${r.schedTime})\n`;
+                });
+                msg += `هل تريد إضافة طلب جديد؟`;
+                
+                alertBox.innerText = msg;
+                alertBox.style.background = '#fff3e0';
+                alertBox.style.color = '#ef6c00';
+                alertBox.style.display = 'block';
+            } else {
+                alertBox.style.display = 'none';
+            }
+        }
+
+        function checkDuplicate() { 
+            const val = document.getElementById('inpRoomNum').value; document.getElementById('room-dup-alert').style.display = 'none'; 
+            if (!val) return; 
+            
+            if (currentAddMode === 'request') {
+                checkRequestWarnings(); // استخدام المنطق الجديد للطلبات
+                return;
+            }
+
+            const activeRoom = appState.rooms.find(room => room.num == val); 
+            if (activeRoom) { document.getElementById('room-dup-alert').innerText = `⛔ الغرفة نشطة حالياً (${activeRoom.status})`; document.getElementById('room-dup-alert').style.background = '#ffebee'; document.getElementById('room-dup-alert').style.color = '#c62828'; document.getElementById('room-dup-alert').style.display = 'block'; return; } 
+            const activeMaint = appState.activeMaintenance.find(room => room.num == val); 
+            if (activeMaint) { document.getElementById('room-dup-alert').innerText = `⛔ الغرفة قيد الصيانة حالياً (نشطة)`; document.getElementById('room-dup-alert').style.background = '#ffebee'; document.getElementById('room-dup-alert').style.color = '#c62828'; document.getElementById('room-dup-alert').style.display = 'block'; return; } 
+        }
         function setupReelControl(container, textElement, type, stepVal) { let startY = 0; let isAnimating = false; container.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; }, { passive: false }); container.addEventListener('touchmove', (e) => { e.preventDefault(); if (isAnimating) return; const currentY = e.touches[0].clientY; const diff = startY - currentY; if (Math.abs(diff) > 20) { isAnimating = true; const direction = diff > 0 ? 1 : -1; if (navigator.vibrate) navigator.vibrate(10); playTickSound(); const animClass = direction > 0 ? 'roll-up' : 'roll-down'; textElement.classList.add(animClass); setTimeout(() => { if (type === 'period') { togglePeriod(); } else { changeTimeValue(type, direction * stepVal); } }, 100); setTimeout(() => { textElement.classList.remove(animClass); isAnimating = false; startY = currentY; }, 210); } }, { passive: false }); }
         function playTickSound() { try { const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return; const ctx = new AudioContext(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = 'square'; osc.frequency.setValueAtTime(500, ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.04); gain.gain.setValueAtTime(0.05, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.05); } catch (e) {} }
         function initTimeFields() { const now = new Date(); let hours = now.getHours(); const minutes = Math.floor(now.getMinutes() / 5) * 5; let period = 'AM'; if (hours >= 12) { period = 'PM'; hours = hours - 12; } if (hours === 0) hours = 12; document.getElementById('inpHourValue').value = hours; document.getElementById('inpMinuteValue').value = minutes; document.getElementById('inpPeriodValue').value = period; document.getElementById('inpHour').innerText = hours.toString().padStart(2, '0'); document.getElementById('inpMinute').innerText = minutes.toString().padStart(2, '0'); document.getElementById('inpPeriodText').innerText = period === 'AM' ? 'صباحاً' : 'مساءً'; document.getElementById('hourBox').classList.add('active'); document.getElementById('minuteBox').classList.remove('active'); document.getElementById('periodBox').classList.remove('active'); }
