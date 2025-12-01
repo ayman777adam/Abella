@@ -707,15 +707,17 @@
         async function addNewBtnAction() {
             let num = document.getElementById('inpRoomNum').value; if (!num) { showCustomAlert('أدخل رقم الغرفة.', 'warning'); return; } num = String(num); 
             
-            // يجب فحص duplicate باستخدام appState المحدث من onSnapshot
-            // لكن يجب الانتباه هنا، لأن ID الغرفة في Firestore هو doc.id وليس room.num
-            // نتحقق من وجود رقم الغرفة في قائمة الغرف النشطة (Rooms)
+            // Check Duplicate (Same as before)
             if (appState.rooms.find(room => room.num === num)) { showCustomAlert(`الغرفة ${num} نشطة بالفعل.`, 'error'); return; }
             if (!db) { showCustomAlert('خطأ في الاتصال بقاعدة البيانات.', 'error'); return; }
 
+            // --- 1. بناء الرسالة (WhatsApp Message Construction) ---
+            let waMsg = '';
             let timeValue = '';
             let schedTimestamp = null;
             let timeInputId = '';
+            
+            // (*** منطق تحديد الوقت والحالة كما هو ***)
             if (currentAddMode === 'cleaning') { timeInputId = 'systemTimeInput'; }
             else if (currentAddMode === 'request' && !isImmediateRequest) { timeInputId = 'systemTimeInputReq'; }
             else if (currentAddMode === 'maintenance' && !isImmediateMaint) { timeInputId = 'systemTimeInputMaint'; }
@@ -743,54 +745,74 @@
 
             if (currentAddMode === 'request') {
                 const details = document.getElementById('inpRequestDetails').value; if (!details) { showCustomAlert('اكتب الطلب.', 'warning'); return; }
-                const newRequest = { num, details, schedTime: isImmediateRequest ? "فوري" : fullTimeString, schedTimestamp, isUrgent: isImmediateRequest, startTime: Date.now(), status: isImmediateRequest ? 'active' : 'scheduled' };
-                try {
-                    await db.collection('guestRequests').add(newRequest);
-                    closeAllModals();
-                    // ✅ تصحيح: استخدام window.open
-                    window.open(`https://wa.me/?text=${encodeURIComponent(`Adora | 🛎️ *طلب*\nغ: ${num}\n${details}\n${isImmediateRequest?'🔥 عاجل':fullTimeString}`)}`, '_blank'); return;
-                } catch(e) { console.error(e); showCustomAlert("فشل إضافة الطلب.", "error"); }
-
+                waMsg = `Adora | 🛎️ *طلب*\nغ: ${num}\n${details}\n${isImmediateRequest?'🔥 عاجل':fullTimeString}`;
             } else if (currentAddMode === 'maintenance') {
                  const details = document.getElementById('inpMaintDetails').value; if (!details) { showCustomAlert('اوصف العطل.', 'warning'); return; }
-                 const file = document.getElementById('inpMaintImage').files[0]; let imgUrl = null;
-                 const btn = document.getElementById('confirm-add-btn');
-
-                 if(file) { btn.innerText = 'جاري الرفع...'; btn.disabled = true; imgUrl = await uploadToImgBB(file); btn.disabled = false; if(!imgUrl) { showCustomAlert('فشل الرفع.', 'error'); return; } }
-                 
-                 const newMaint = { num, maintDesc: details, maintImg: imgUrl, schedTime: isImmediateMaint ? "فوري" : fullTimeString, schedTimestamp, startTime: Date.now(), status: isImmediateMaint ? 'active' : 'scheduled', history: [{action: 'تسجيل', time: new Date().toLocaleTimeString('en-US')}] };
-                 
-                 try {
-                     await db.collection('activeMaintenance').add(newMaint);
-                     closeAllModals();
-                     // ✅ تصحيح: استخدام window.open
-                     window.open(`https://wa.me/?text=${encodeURIComponent(`Adora | 🛠️ *صيانة*\nغ: ${num}\n${details}\n${imgUrl || ''}`)}`, '_blank'); return;
-                 } catch(e) { console.error(e); showCustomAlert("فشل إضافة الصيانة.", "error"); }
-
+                 waMsg = `Adora | 🛠️ *صيانة*\nغ: ${num}\n${details}`;
             } else if (currentAddMode === 'cleaning') {
-                const type = document.getElementById('inpRoomType').value; const isSuper = document.getElementById('inpSuperTurbo').checked; if (!type) { showCustomAlert('اختر الحالة.', 'warning'); return; }
-                
-                const newRoom = { 
-                    num, type, 
-                    status: schedTimestamp ? 'scheduled' : 'acknowledging', 
-                    startTime: Date.now(), 
-                    deadline: Date.now() + CONFIG.times.TRAVEL, 
-                    guestStatus: type === 'stay' ? document.getElementById('inpGuestStatus').value : 'out', 
-                    undoExpiry: Date.now() + 15000, 
-                    historyLogs: [{ action: 'دخول', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) }], 
-                    isSuperTurbo: isSuper, 
-                    isNew: true, 
-                    schedTime: fullTimeString, 
-                    schedTimestamp 
-                };
-                
-                try {
-                    // Firestore سيضيف ID خاص به (doc.id)
+                const type = document.getElementById('inpRoomType').value; if (!type) { showCustomAlert('اختر الحالة.', 'warning'); return; }
+                waMsg = `Adora | *${type==='out'?'خروج':'ساكن'}*\nغ: ${num}`;
+            }
+            
+            // --- 2. فتح الواتساب قبل الـ ASYNC (Popup Context Fix) ---
+            window.open(`https://wa.me/?text=${encodeURIComponent(waMsg)}`, '_blank'); 
+
+            closeAllModals(); 
+            
+            // --- 3. استدعاء الدالة المساعدة لحفظ Firebase في الخلفية ---
+            const roomType = document.getElementById('inpRoomType').value;
+            const isSuper = document.getElementById('inpSuperTurbo').checked;
+            const maintDetails = document.getElementById('inpMaintDetails').value;
+            const reqDetails = document.getElementById('inpRequestDetails').value;
+            const maintFile = document.getElementById('inpMaintImage').files[0];
+
+            // استدعاء دالة async جديدة
+            await submitNewEntryToFirebase(
+                currentAddMode, num, isScheduled, schedTimestamp, fullTimeString, 
+                roomType, isSuper, maintDetails, reqDetails, maintFile
+            );
+        }
+
+        // دالة مساعدة جديدة لجميع عمليات الحفظ على Firebase (Async)
+        async function submitNewEntryToFirebase(
+            mode, num, isScheduled, schedTimestamp, fullTimeString, 
+            roomType, isSuper, maintDetails, reqDetails, maintFile
+        ) {
+            if (!db) { return; }
+
+            try {
+                let imgUrl = null;
+                if (mode === 'maintenance' && maintFile) {
+                    // رفع الصورة هنا داخل الدالة async
+                    imgUrl = await uploadToImgBB(maintFile);
+                    if (!imgUrl) { showCustomAlert('فشل رفع صورة الصيانة.', 'error'); return; }
+                }
+
+                if (mode === 'request') {
+                    const newRequest = { num, details: reqDetails, schedTime: isImmediateRequest ? "فوري" : fullTimeString, schedTimestamp, isUrgent: isImmediateRequest, startTime: Date.now(), status: isImmediateRequest ? 'active' : 'scheduled' };
+                    await db.collection('guestRequests').add(newRequest);
+                } else if (mode === 'maintenance') {
+                     const newMaint = { num, maintDesc: maintDetails, maintImg: imgUrl, schedTime: isImmediateMaint ? "فوري" : fullTimeString, schedTimestamp, startTime: Date.now(), status: isImmediateMaint ? 'active' : 'scheduled', history: [{action: 'تسجيل', time: new Date().toLocaleTimeString('en-US')}] };
+                     await db.collection('activeMaintenance').add(newMaint);
+                } else if (mode === 'cleaning') {
+                    const newRoom = { 
+                        num, type: roomType, 
+                        status: isScheduled ? 'scheduled' : 'acknowledging', 
+                        startTime: Date.now(), 
+                        deadline: Date.now() + CONFIG.times.TRAVEL, 
+                        guestStatus: roomType === 'stay' ? document.getElementById('inpGuestStatus').value : 'out', 
+                        undoExpiry: Date.now() + 15000, 
+                        historyLogs: [{ action: 'دخول', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) }], 
+                        isSuperTurbo: isSuper, 
+                        isNew: true, 
+                        schedTime: fullTimeString, 
+                        schedTimestamp 
+                    };
                     await db.collection('rooms').add(newRoom);
-                    closeAllModals();
-                    // ✅ تصحيح: استخدام window.open
-                    window.open(`https://wa.me/?text=${encodeURIComponent(`Adora | *${type==='out'?'خروج':'ساكن'}*\nغ: ${num}`)}`, '_blank');
-                } catch(e) { console.error(e); showCustomAlert("فشل إضافة الغرفة.", "error"); }
+                }
+            } catch(e) {
+                console.error("Firebase Add Failed:", e); 
+                showCustomAlert(`فشل إضافة ${mode} إلى Firebase.`, 'error'); 
             }
         }
         
@@ -908,10 +930,25 @@
 
             if (isLate && !delayReason) { showCustomAlert('سبب التأخير مطلوب.', 'warning'); return; } 
             
+            // --- 1. بناء الرسالة وفتح الواتساب (قبل أي async/await) ---
+            if (shouldSendWhatsapp) {
+                let waMsg = '';
+                if (status === 'تحتاج صيانة') {
+                     // رسالة أولية (سيتم تحديثها بالصورة لاحقاً)
+                     waMsg = `Adora | 🛠️ *عطل*\nغ: ${room.num}\n(جاري رفع الصورة والوصف)`;
+                } else {
+                     waMsg = `Adora | ✅ غ ${room.num} جاهزة`;
+                }
+                window.open(`https://wa.me/?text=${encodeURIComponent(waMsg)}`, '_blank'); 
+            }
+            
+            closeAllModals(); 
+
+            // --- 2. تنفيذ العمليات غير المتزامنة (الرفع والحفظ) ---
             const logAction = { action: 'توثيق', time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }) };
             
             try {
-                // 1. تحديث HistoryLog في Firestore قبل الحذف
+                // تحديث السجل أولاً
                 await db.collection('rooms').doc(activeRoomId).update({
                     historyLogs: firebase.firestore.FieldValue.arrayUnion(logAction)
                 });
@@ -919,7 +956,10 @@
                 if (status === 'تحتاج صيانة') { 
                     const desc = document.getElementById('repair-details-input').value; 
                     const file = document.getElementById('modal-img-camera-input').files[0]; 
-                    if (!desc || !file) { showCustomAlert('مطلوب صورة ووصف.', 'warning'); return; } 
+                    if (!desc || !file) { 
+                        showCustomAlert('فشل الحفظ: مطلوب صورة ووصف للإصلاح.', 'error'); 
+                        return; 
+                    } 
                     
                     const btn = document.getElementById('btn_confirm_finish'); 
                     btn.innerText = 'رفع...'; 
@@ -929,51 +969,29 @@
                     if (!imgUrl) return; 
                     
                     const maintEntry = { 
-                        num: room.num, 
-                        type: room.type, 
-                        history: room.historyLogs.concat([logAction]), // ندمج السجل هنا
-                        isLate, delayReason, 
-                        maintDesc: desc, 
-                        maintImg: imgUrl, 
-                        startTime: Date.now(), 
-                        status: 'active' 
+                        num: room.num, type: room.type, history: room.historyLogs.concat([logAction]), 
+                        isLate, delayReason, maintDesc: desc, maintImg: imgUrl, 
+                        startTime: Date.now(), status: 'active' 
                     }; 
                     
-                    // لا نستخدم activeRoomId كـ ID للمستند الجديد
                     await db.collection('activeMaintenance').add(maintEntry);
-                    // حذف الغرفة من القائمة النشطة
                     await db.collection('rooms').doc(activeRoomId).delete();
-                    
-                    closeAllModals(); 
-                    // ✅ تصحيح: استخدام window.open
-                    window.open(`https://wa.me/?text=${encodeURIComponent(`Adora | 🛠️ *عطل*\nغ: ${room.num}\n${desc}\n${imgUrl}`)}`, '_blank'); 
+
                 } else { 
                     const logEntry = { 
-                        id: Date.now(), // نستخدم ID جديد للسجل
-                        num: room.num, 
-                        type: room.type, 
-                        status, 
-                        history: room.historyLogs.concat([logAction]), 
-                        isLate, 
-                        delayReason, 
-                        duration 
+                        id: Date.now(), num: room.num, type: room.type, status, history: room.historyLogs.concat([logAction]), 
+                        isLate, delayReason, duration: Date.now() - room.startTime
                     }; 
                     
-                    // 1. إضافة إلى سجل التنظيف (Cleaning Log)
                     await db.collection('logs').doc('cleaning').update({
                         items: firebase.firestore.FieldValue.arrayUnion(logEntry)
                     }, { merge: true });
 
-                    // 2. حذف من قائمة الغرف النشطة (Rooms)
                     await db.collection('rooms').doc(activeRoomId).delete();
-                    
-                    closeAllModals(); 
-                    // ✅ تصحيح: استخدام window.open
-                    if (shouldSendWhatsapp) window.open(`https://wa.me/?text=${encodeURIComponent(`Adora | ✅ غ ${room.num} جاهزة`)}`, '_blank'); 
                 }
             } catch(e) { 
                 console.error("Error finishing room:", e); 
-                showCustomAlert("فشل إنهاء الغرفة.", "error"); 
+                showCustomAlert("فشل إنهاء الغرفة على Firebase.", 'error'); 
             }
         }
 
@@ -987,44 +1005,39 @@
             const file = document.getElementById('maint-img-camera-input').files[0]; 
             if (!file) { showCustomAlert('صورة الإنهاء مطلوبة.', 'error'); return; } 
             
-            document.getElementById('btn_confirm_maint_finish').innerText = 'رفع...'; 
-            document.getElementById('btn_confirm_maint_finish').disabled = true; 
+            // --- 1. فتح الواتساب قبل الـ ASYNC (Popup Context Fix) ---
+            window.open(`https://wa.me/?text=${encodeURIComponent(`Adora | ✅ صيانة منجزة\nغ: ${maint.num}\n(جاري رفع الصورة)`)}`, '_blank'); 
+
+            closeAllModals(); 
+
+            // --- 2. تنفيذ العمليات غير المتزامنة (الرفع والحفظ) ---
+            const btn = document.getElementById('btn_confirm_maint_finish'); 
+            btn.innerText = 'رفع...'; 
+            btn.disabled = true; 
             const imgUrl = await uploadToImgBB(file); 
-            document.getElementById('btn_confirm_maint_finish').disabled = false; 
+            btn.disabled = false; 
             if (!imgUrl) return; 
             
             maint.timeFinish = new Date().toLocaleTimeString('en-US'); 
             maint.finishImg = imgUrl; 
             maint.duration = Date.now() - maint.startTime;
-            const logId = Date.now(); // إعطاء ID جديد للسجل
+            const logId = Date.now(); 
 
-            // إنشاء سجل جديد بدون ID المستند القديم
             const logEntry = { 
-                id: logId, 
-                num: maint.num, 
-                type: 'maint',
-                maintDesc: maint.maintDesc,
-                maintImg: maint.maintImg, // صورة البداية
-                finishImg: imgUrl, // صورة النهاية
-                duration: maint.duration,
-                time: maint.timeFinish
+                id: logId, num: maint.num, type: 'maint', maintDesc: maint.maintDesc,
+                maintImg: maint.maintImg, finishImg: imgUrl, duration: maint.duration, time: maint.timeFinish
             };
 
             try {
-                // 1. إضافة إلى سجل الصيانة المكتملة
                 await db.collection('logs').doc('maint').update({
                     items: firebase.firestore.FieldValue.arrayUnion(logEntry)
                 }, { merge: true });
 
-                // 2. حذف من قائمة الصيانة النشطة
                 await db.collection('activeMaintenance').doc(activeMaintId).delete();
-
-                closeAllModals(); 
-                // ✅ تصحيح: استخدام window.open
-                window.open(`https://wa.me/?text=${encodeURIComponent(`Adora | ✅ صيانة منجزة\nغ: ${maint.num}\n${imgUrl}`)}`, '_blank'); 
+                
             } catch(e) {
                 console.error("Error completing maintenance:", e);
-                showCustomAlert("فشل إنهاء الصيانة.", "error");
+                showCustomAlert("فشل إنهاء الصيانة على Firebase.", "error");
             }
         }
 
@@ -1118,7 +1131,7 @@
             const completedReqs = appState.guestRequestsLog ? appState.guestRequestsLog.length : 0; 
             const activeMaint = appState.activeMaintenance.length; 
             msg += `✅ طلبات منفذة: ${completedReqs}\n🛠️ صيانة نشطة: ${activeMaint}`; 
-            // ✅ تصحيح: استخدام window.open
+            // ✅ تم التصحيح
             window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank'); 
         }
         
