@@ -7,28 +7,55 @@
 <style>
     body { margin: 0; font-family: "Tajawal", sans-serif; background: #f7f9fa; overflow: hidden; }
 
-    /* زر التحويل المحسن */
+    /* زر التحويل المحسن - ثابت في أعلى اليسار (40px) ومصغر */
     #switchBtn {
-        position: fixed; top: 20px; left: 20px;
-        z-index: 1500; /* قيمة معقولة تظهر فوق العناصر ولا تسبب مشاكل */
-        padding: 12px 24px; /* مساحة لمس مريحة للهاتف */
-        border-radius: 30px; border: none;
-        background: #00e676; color: #006064;
-        font-weight: 800; font-size: 0.9rem;
+        position: fixed; 
+        /* تم خفضه من 30px إلى 40px ليصبح أكثر انخفاضاً */
+        top: 40px; 
+        left: 20px; 
+        z-index: 2000;
+        /* حجم مصغر */
+        padding: 8px 16px; 
+        border-radius: 30px;
+        border: none;
+        background: #00e676;
+        color: #006064;
+        font-weight: 800;
+        font-size: 0.8rem; 
         cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 6px 20px rgba(0, 230, 118, 0.6);
+        transition: all 0.4s ease-in-out, border-radius 0.2s, width 0.4s, height 0.4s; 
         display: flex; align-items: center; gap: 8px;
+        justify-content: flex-start;
     }
-    #switchBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 230, 118, 0.6); }
+    #switchBtn:hover { transform: translateY(-3px) scale(1.05); }
     #switchBtn:active { transform: scale(0.95); }
 
+    /* التصميم الخاص بالحالة النبضية (الدائرة) */
+    .pulsing-mode {
+        width: 45px; height: 45px; 
+        padding: 0; 
+        border-radius: 50% !important; 
+        white-space: nowrap; 
+        overflow: hidden; 
+        box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.7); 
+        animation: pulse 2s infinite; 
+        justify-content: center; 
+    }
+
+    /* حركة النبض */
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 230, 118, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+    }
+    
     iframe { width: 100%; height: 100vh; height: 100dvh; border: none; display: none; position: relative !important; z-index: 1 !important; }
 
-    /* desktop optimization */
+    /* تعديلات سطح المكتب - إبقائه في أعلى اليسار (40px) */
     @media (min-width: 768px) {
-        #switchBtn { top: 25px; left: 50%; transform: translateX(-50%); }
-        #switchBtn:hover { transform: translateX(-50%) translateY(-2px); }
+        #switchBtn { top: 40px; left: 30px; transform: none; } /* تم التعديل هنا أيضاً */
+        #switchBtn:hover { transform: translateY(-3px) scale(1.05); }
     }
 
     html.show-switch #staffFrame, html.show-switch #workerFrame { pointer-events: none !important; }
@@ -61,13 +88,43 @@
         }
         localStorage.setItem('adora_view_mode', mode);
         currentMode = mode;
+        handleScroll();
     }
 
     function toggleMode() {
         const newMode = (currentMode === "staff") ? "worker" : "staff";
         applyMode(newMode);
     }
+    
+    // ------------------------------------------------------------------
+    // منطق التمرير والتحويل (Pulsing Feature)
+    // ------------------------------------------------------------------
+    
+    let isPulsing = false;
+    // الحد الأدنى للتمرير لتفعيل الوضع النبضي (100 بكسل)
+    const SCROLL_THRESHOLD = 100; 
+
+    function handleScroll() {
+        // نستخدم window.scrollY لرصد التمرير في النافذة الرئيسية
+        const scrollAmount = window.scrollY; 
+
+        if (scrollAmount > SCROLL_THRESHOLD && !isPulsing) {
+            btn.classList.add('pulsing-mode');
+            isPulsing = true;
+        } else if (scrollAmount <= SCROLL_THRESHOLD && isPulsing) {
+            btn.classList.remove('pulsing-mode');
+            isPulsing = false;
+        }
+    }
+
+    // تفعيل مراقبة التمرير
+    window.addEventListener('scroll', handleScroll); 
+    
+    // التطبيق الأولي للوضع
     applyMode(currentMode);
+    
+    // نداء إضافي للتأكد من الحالة الصحيحة عند التحميل
+    handleScroll(); 
 </script>
 </body>
 </html>
